@@ -23,7 +23,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <div className="text-center space-y-2">
           <h1 className="text-xl font-semibold">Link không hợp lệ</h1>
           <p className="text-muted-foreground">Link invite này đã hết hạn hoặc không tồn tại.</p>
-          <Button asChild><a href="/dashboard">Về Dashboard</a></Button>
+          <Button render={<a href="/dashboard" />}>Về Dashboard</Button>
         </div>
       </div>
     )
@@ -65,8 +65,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <form action={acceptInvite}>
           <Button type="submit" className="w-full">Tham gia project</Button>
         </form>
-        <Button variant="ghost" asChild className="w-full">
-          <a href="/dashboard">Từ chối</a>
+        <Button variant="ghost" render={<a href="/dashboard" />} className="w-full">
+          Từ chối
         </Button>
       </div>
     </div>

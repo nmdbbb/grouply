@@ -43,8 +43,8 @@ export function CreateSectionDialog({ projectId, currentCount, onCreated }: Prop
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">+ Thêm section</Button>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        + Thêm section
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Tạo section mới</DialogTitle></DialogHeader>

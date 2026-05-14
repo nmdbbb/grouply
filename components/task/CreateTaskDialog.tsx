@@ -50,8 +50,8 @@ export function CreateTaskDialog({ projectId, sections, userId, onCreated }: Pro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">+ Thêm task</Button>
+      <DialogTrigger render={<Button size="sm" />}>
+        + Thêm task
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -64,7 +64,7 @@ export function CreateTaskDialog({ projectId, sections, userId, onCreated }: Pro
           </div>
           <div className="space-y-1">
             <Label>Section</Label>
-            <Select value={sectionId} onValueChange={setSectionId}>
+            <Select value={sectionId} onValueChange={(v) => setSectionId(v ?? '')}>
               <SelectTrigger><SelectValue placeholder="Chọn section" /></SelectTrigger>
               <SelectContent>
                 {sections.map(s => (
@@ -75,7 +75,7 @@ export function CreateTaskDialog({ projectId, sections, userId, onCreated }: Pro
           </div>
           <div className="space-y-1">
             <Label>Loại</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(v) => setType(v ?? '')}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="output">Output</SelectItem>

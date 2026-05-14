@@ -59,15 +59,15 @@ export default async function DashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold">Projects của bạn</h1>
-          <Button asChild>
-            <Link href="/project/new">+ Tạo project mới</Link>
+          <Button render={<Link href="/project/new" />}>
+            + Tạo project mới
           </Button>
         </div>
         {(!memberships || memberships.length === 0) ? (
           <div className="text-center py-16 text-muted-foreground">
             <p>Chưa có project nào.</p>
-            <Button asChild className="mt-4">
-              <Link href="/project/new">Tạo project đầu tiên</Link>
+            <Button render={<Link href="/project/new" />} className="mt-4">
+              Tạo project đầu tiên
             </Button>
           </div>
         ) : (
