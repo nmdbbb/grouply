@@ -59,7 +59,10 @@ export function CreateProjectForm({ userId }: { userId: string }) {
         role: 'owner',
       })
 
-      router.push(`/project/${project.id}`)
+      if (data.brief?.trim()) {
+        localStorage.setItem(`grouply-brief-${project.id}`, data.brief.trim())
+      }
+      router.push(`/project/${project.id}?parseBrief=1`)
       router.refresh()
     } catch (err: any) {
       toast.error('Lỗi', { description: err.message })
