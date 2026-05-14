@@ -27,7 +27,7 @@ export function buildGhostNodesFromToolCalls(
         project_id: context.projectId,
         name: input.name as string,
         status: 'todo',
-        type: validType as 'output' | 'coordination' | 'research' | 'review',
+        type: validType as TaskType,
         assignee_id: null,
         deadline: (input.deadline as string) || null,
         section_id: (input.section_id as string) || null,
