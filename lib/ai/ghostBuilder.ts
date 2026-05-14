@@ -1,7 +1,7 @@
 import type { Node, Edge } from '@xyflow/react'
 import type { ToolCall } from '@/stores/chatStore'
 import type { ProjectContext } from './context'
-import type { Task } from '@/types'
+import type { Task, TaskType } from '@/types'
 
 export function buildGhostNodesFromToolCalls(
   toolCalls: ToolCall[],
@@ -17,12 +17,17 @@ export function buildGhostNodesFromToolCalls(
       const tempId = `ghost-${crypto.randomUUID()}`
       const now = new Date().toISOString()
       
+      const taskType = (input.type as string) || 'output'
+      const validType = (taskType === 'output' || taskType === 'coordination' || taskType === 'research' || taskType === 'review')
+        ? taskType
+        : 'output'
+
       const task: Task = {
         id: tempId,
         project_id: context.projectId,
         name: input.name as string,
         status: 'todo',
-        type: (input.type as string) || 'output',
+        type: validType as 'output' | 'coordination' | 'research' | 'review',
         assignee_id: null,
         deadline: (input.deadline as string) || null,
         section_id: (input.section_id as string) || null,
