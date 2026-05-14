@@ -16,7 +16,7 @@ CREATE TABLE projects (
   subject     text,
   description text,
   deadline    date NOT NULL,
-  owner_id    uuid REFERENCES profiles NOT NULL,
+  owner_id    uuid REFERENCES profiles ON DELETE RESTRICT NOT NULL,
   created_at  timestamptz DEFAULT now()
 );
 
@@ -94,7 +94,7 @@ CREATE TABLE task_documents (
 CREATE TABLE task_history (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id     uuid REFERENCES tasks ON DELETE CASCADE,
-  user_id     uuid REFERENCES profiles ON DELETE SET NULL,
+  user_id     uuid REFERENCES profiles ON DELETE CASCADE,
   action      text NOT NULL,
   old_value   jsonb,
   new_value   jsonb,
