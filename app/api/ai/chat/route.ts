@@ -16,8 +16,13 @@ export async function POST(req: NextRequest) {
   const { project_id, message, conversation_history = [], commit_tool_calls } = body
 
   if (commit_tool_calls && Array.isArray(commit_tool_calls)) {
-    await executeToolCalls(commit_tool_calls as ToolCall[], project_id, user.id)
-    return NextResponse.json({ executed: true })
+    console.log('[commit] tool_calls count:', commit_tool_calls.length)
+    const results = await executeToolCalls(commit_tool_calls as ToolCall[], project_id, user.id, supabase)
+    const errors = results.filter(r => r.error)
+    const taskResults = results.filter(r => r.toolName === 'add_task')
+    console.log('[commit] task results:', JSON.stringify(taskResults))
+    console.log('[commit] errors:', JSON.stringify(errors))
+    return NextResponse.json({ executed: true, results })
   }
 
   const { data: profile } = await supabase.from('profiles').select('name, byok_key').eq('id', user.id).single()
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
     : process.env.ANTHROPIC_API_KEY!
 
   const context = await buildProjectContext(project_id)
-  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role)
+  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id)
 
   const anthropic = new Anthropic({ apiKey })
 

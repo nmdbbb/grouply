@@ -1,6 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
 import { buildProjectContext } from './context'
+import { buildGhostPreview } from './preview'
 import type { ToolCall } from '@/stores/chatStore'
+
+export { buildGhostPreview }
 
 const SECTION_COLORS = ['#EEEDFE','#FEF3C7','#D1FAE5','#FEE2E2','#DBEAFE','#F3E8FF','#ECFDF5','#FFF7ED']
 
@@ -10,12 +12,14 @@ export interface ToolResult {
   error?: string
 }
 
+// executeToolCall runs server-side only (called from /api/ai/chat route)
+// It receives a supabase client passed in to avoid importing server modules here
 export async function executeToolCall(
   tool: ToolCall,
   projectId: string,
-  userId: string
+  userId: string,
+  supabase: any
 ): Promise<ToolResult> {
-  const supabase = await createClient()
   const { name, input } = tool
 
   try {
@@ -27,7 +31,7 @@ export async function executeToolCall(
       case 'read_task': {
         const { data } = await supabase
           .from('tasks')
-          .select('*, assignee:profiles(*), claims:task_claims(*, profile:profiles(*)), documents:task_documents(*)')
+          .select('*, assignee:profiles!tasks_assignee_id_fkey(id, name, avatar_url), claims:task_claims(*, profile:profiles(id, name, avatar_url)), documents:task_documents(*)')
           .eq('id', input.task_id as string)
           .single()
         return { toolName: name, result: data }
@@ -42,31 +46,48 @@ export async function executeToolCall(
           .from('project_members')
           .select('*, profile:profiles(id, name)')
           .eq('project_id', projectId)
-        const load = (members ?? []).map(m => {
-          const memberId = (m.profile as any)?.id
-          const memberTasks = (tasks ?? []).filter(t => t.assignee_id === memberId)
+        const load = (members ?? []).map((m: any) => {
+          const memberId = m.profile?.id
+          const memberTasks = (tasks ?? []).filter((t: any) => t.assignee_id === memberId)
           return {
             memberId,
-            memberName: (m.profile as any)?.name,
-            tasks_doing: memberTasks.filter(t => t.status === 'doing' || t.status === 'review'),
-            tasks_todo: memberTasks.filter(t => t.status === 'todo'),
+            memberName: m.profile?.name,
+            tasks_doing: memberTasks.filter((t: any) => t.status === 'doing' || t.status === 'review'),
+            tasks_todo: memberTasks.filter((t: any) => t.status === 'todo'),
             total_load_count: memberTasks.length,
           }
         })
         return { toolName: name, result: load }
       }
       case 'add_task': {
+        // Resolve section name → id nếu AI truyền tên thay vì id
+        let sectionId = (input.section_id as string) || null
+        const sectionName = input.section as string
+        if (!sectionId && sectionName) {
+          const { data: sec } = await supabase
+            .from('sections').select('id').eq('project_id', projectId).ilike('name', `%${sectionName}%`).limit(1).single()
+          sectionId = sec?.id ?? null
+        }
+        // Auto-position: stack tasks vertically within section (20px top + 80px per existing task)
+        let posX = (input.pos_x as number) || 20
+        let posY = (input.pos_y as number) || 20
+        if (!input.pos_x && !input.pos_y && sectionId) {
+          const { count } = await supabase
+            .from('tasks').select('id', { count: 'exact', head: true }).eq('section_id', sectionId)
+          posY = 20 + (count ?? 0) * 80
+        }
         const { data } = await supabase.from('tasks').insert({
           project_id: projectId,
-          section_id: (input.section_id as string) || null,
-          name: input.name as string,
+          section_id: sectionId,
+          name: (input.name ?? input.title) as string,
+          description: (input.description as string) || null,
           type: (input.type as string) || 'output',
           checklist_item_id: (input.checklist_item_id as string) || null,
           blocked_by_id: (input.blocked_by_id as string) || null,
-          deadline: (input.deadline as string) || null,
+          deadline: (input.deadline as string) || (input.due as string) || null,
           assignee_id: (input.assignee_id as string) || null,
-          pos_x: (input.pos_x as number) || 50,
-          pos_y: (input.pos_y as number) || 50,
+          pos_x: posX,
+          pos_y: posY,
           created_by: userId,
         }).select().single()
         return { toolName: name, result: data }
@@ -120,8 +141,25 @@ export async function executeToolCall(
           .eq('id', input.task_id as string).select().single()
         return { toolName: name, result: data }
       }
-      case 'suggest_assignment':
-        return { toolName: name, result: { note: 'Use read_member_load to get context, then suggest.' } }
+      case 'assign_tasks_batch': {
+        const assignments = input.assignments as { task_id: string; assignee_id: string }[]
+        if (!Array.isArray(assignments) || assignments.length === 0) {
+          return { toolName: name, result: null, error: 'assignments must be a non-empty array' }
+        }
+        const results = await Promise.all(
+          assignments.map(({ task_id, assignee_id }) =>
+            supabase.from('tasks')
+              .update({ assignee_id })
+              .eq('id', task_id)
+              .eq('project_id', projectId)
+              .select('id, name, assignee_id')
+              .single()
+          )
+        )
+        const errors = results.filter((r: any) => r.error).map((r: any) => r.error?.message)
+        if (errors.length > 0) return { toolName: name, result: null, error: errors.join('; ') }
+        return { toolName: name, result: results.map((r: any) => r.data) }
+      }
       default:
         return { toolName: name, result: null, error: `Unknown tool: ${name}` }
     }
@@ -133,27 +171,34 @@ export async function executeToolCall(
 export async function executeToolCalls(
   toolCalls: ToolCall[],
   projectId: string,
-  userId: string
+  userId: string,
+  supabase: any
 ): Promise<ToolResult[]> {
-  return Promise.all(toolCalls.map(tc => executeToolCall(tc, projectId, userId)))
-}
+  // Execute tuần tự để section tạo trước, task có thể resolve section_id
+  const sectionNameToId: Record<string, string> = {}
+  const results: ToolResult[] = []
 
-export function buildGhostPreview(toolCalls: ToolCall[]): { description: string; changes: string[] } {
-  const changes = toolCalls.map(tc => {
-    switch (tc.name) {
-      case 'add_task': return `Thêm task: "${tc.input.name}"`
-      case 'update_task': {
-        const fields = tc.input.fields as Record<string, unknown>
-        return `Cập nhật task (${Object.keys(fields).join(', ')})`
+  for (let tc of toolCalls) {
+    // Inject section_id từ cache nếu add_task dùng section name
+    if (tc.name === 'add_task' && !tc.input.section_id && tc.input.section) {
+      const sectionName = tc.input.section as string
+      if (sectionNameToId[sectionName]) {
+        tc = { ...tc, input: { ...tc.input, section_id: sectionNameToId[sectionName] } }
       }
-      case 'delete_task': return `Xóa task`
-      case 'add_section': return `Thêm section: "${tc.input.name}"`
-      case 'add_checklist_item': return `Thêm checklist: "${tc.input.name}"`
-      case 'link_task_to_item': return `Liên kết task với checklist item`
-      case 'set_dependency': return `Tạo dependency`
-      case 'remove_dependency': return `Xóa dependency`
-      default: return tc.name
     }
-  })
-  return { description: `${toolCalls.length} thay đổi sẽ được thực hiện`, changes }
+
+    const result = await executeToolCall(tc, projectId, userId, supabase)
+
+    // Cache section id sau khi tạo
+    if (tc.name === 'add_section' && result.result) {
+      const sec = result.result as any
+      if (sec?.id && tc.input.name) {
+        sectionNameToId[tc.input.name as string] = sec.id
+      }
+    }
+
+    results.push(result)
+  }
+
+  return results
 }

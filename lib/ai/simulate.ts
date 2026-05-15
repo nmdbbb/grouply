@@ -8,9 +8,10 @@ export function buildSimulatePrompt(
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
   userMessage: string,
   currentUserName: string,
-  currentUserRole: string
+  currentUserRole: string,
+  currentUserId: string
 ): string {
-  const systemPrompt = buildSystemPrompt(context, currentUserName, currentUserRole, 'simulate')
+  const systemPrompt = buildSystemPrompt(context, currentUserName, currentUserRole, currentUserId, 'simulate')
 
   const toolsDescription = TOOL_DEFINITIONS.map(t =>
     `**${t.name}**: ${t.description}`
@@ -38,13 +39,38 @@ User: ${userMessage}`
 }
 
 export function parseSimulateResponse(responseText: string): ToolCall[] {
-  const match = responseText.match(/<tool_calls>\s*([\s\S]*?)\s*<\/tool_calls>/)
-  if (!match) return []
-  try {
-    const parsed = JSON.parse(match[1])
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(tc => typeof tc.name === 'string' && typeof tc.input === 'object')
-  } catch {
-    return []
+  // Format 1: <tool_calls>[...]</tool_calls>
+  const xmlMatch = responseText.match(/<tool_calls>\s*([\s\S]*?)\s*<\/tool_calls>/)
+  if (xmlMatch) {
+    try {
+      const parsed = JSON.parse(xmlMatch[1])
+      if (Array.isArray(parsed)) {
+        return parsed.filter(tc => typeof tc.name === 'string' && tc.input !== undefined)
+      }
+    } catch {}
   }
+
+  // Format 2: plain JSON array anywhere in text (greedy - lấy array lớn nhất)
+  const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/)
+  if (arrayMatch) {
+    try {
+      const parsed = JSON.parse(arrayMatch[0])
+      if (Array.isArray(parsed)) {
+        return parsed.filter(tc => typeof tc.name === 'string' && tc.input !== undefined)
+      }
+    } catch {}
+  }
+
+  // Format 3: ```json [...] ```
+  const codeMatch = responseText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/)
+  if (codeMatch) {
+    try {
+      const parsed = JSON.parse(codeMatch[1])
+      if (Array.isArray(parsed)) {
+        return parsed.filter(tc => typeof tc.name === 'string' && tc.input !== undefined)
+      }
+    } catch {}
+  }
+
+  return []
 }

@@ -54,7 +54,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Tên task' },
-        section_id: { type: 'string', description: 'ID section chứa task' },
+        section: { type: 'string', description: 'Tên section chứa task (dùng thay cho section_id nếu không có UUID)' },
+        section_id: { type: 'string', description: 'UUID section chứa task (nếu đã biết)' },
         type: { type: 'string', enum: ['output', 'coordination', 'research', 'review'] },
         checklist_item_id: { type: 'string', description: 'optional' },
         blocked_by_id: { type: 'string', description: 'optional' },
@@ -63,7 +64,7 @@ export const TOOL_DEFINITIONS: Tool[] = [
         pos_x: { type: 'number' },
         pos_y: { type: 'number' },
       },
-      required: ['name', 'section_id', 'type'],
+      required: ['name', 'type'],
     },
   },
   {
@@ -158,12 +159,25 @@ export const TOOL_DEFINITIONS: Tool[] = [
     },
   },
   {
-    name: 'suggest_assignment',
-    description: 'AI đề xuất người phù hợp nhất cho task. Chỉ owner.',
+    name: 'assign_tasks_batch',
+    description: 'Phân công hàng loạt tasks cho các thành viên. Dùng khi owner muốn giao việc theo giai đoạn hoặc member muốn nhận việc.',
     input_schema: {
       type: 'object',
-      properties: { task_id: { type: 'string' } },
-      required: ['task_id'],
+      properties: {
+        assignments: {
+          type: 'array',
+          description: 'Danh sách phân công',
+          items: {
+            type: 'object',
+            properties: {
+              task_id: { type: 'string', description: 'UUID của task' },
+              assignee_id: { type: 'string', description: 'UUID của thành viên được assign' },
+            },
+            required: ['task_id', 'assignee_id'],
+          },
+        },
+      },
+      required: ['assignments'],
     },
   },
 ]

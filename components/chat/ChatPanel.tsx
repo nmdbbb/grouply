@@ -17,9 +17,11 @@ interface Props {
   context: ProjectContext
   currentUserName: string
   currentUserRole: string
+  userId: string
+  onAfterCommit?: () => void
 }
 
-export function ChatPanel({ projectId, context, currentUserName, currentUserRole }: Props) {
+export function ChatPanel({ projectId, context, currentUserName, currentUserRole, userId, onAfterCommit }: Props) {
   const [input, setInput] = useState('')
   const [showSimulate, setShowSimulate] = useState(false)
   const [simulatePrompt, setSimulatePrompt] = useState('')
@@ -40,7 +42,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
     try {
       if (mode === 'simulate') {
         const history = messages.map(m => ({ role: m.role, content: m.content }))
-        const prompt = buildSimulatePrompt(context, history, text, currentUserName, currentUserRole)
+        const prompt = buildSimulatePrompt(context, history, text, currentUserName, currentUserRole, userId)
         setSimulatePrompt(prompt)
         setShowSimulate(true)
         setLoading(false)
@@ -69,7 +71,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       addMessage({ role: 'assistant', content: 'Xin lỗi, có lỗi xảy ra. Thử lại nhé.' })
     }
     setLoading(false)
-  }, [input, loading, mode, messages, projectId, context, currentUserName, currentUserRole, addMessage, setLoading, setPending, setGhostPreview])
+  }, [input, loading, mode, messages, projectId, context, currentUserName, currentUserRole, userId, addMessage, setLoading, setPending, setGhostPreview])
 
   function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview, responseText: string) {
     if (responseText) addMessage({ role: 'assistant', content: responseText })
@@ -101,7 +103,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
             preview={ghostPreview}
             toolCalls={pendingToolCalls}
             projectId={projectId}
-            onCommit={() => { clearPending(); clearGhost() }}
+            onCommit={() => { clearPending(); clearGhost(); onAfterCommit?.() }}
             onDiscard={() => { clearPending(); clearGhost() }}
           />
         )}
