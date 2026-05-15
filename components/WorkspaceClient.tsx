@@ -10,6 +10,7 @@ import { ContributionBar } from '@/components/contribution/ContributionBar'
 import { TaskDrawer } from '@/components/task/TaskDrawer'
 import { DocumentsTab } from '@/components/documents/DocumentsTab'
 import { ResizableDivider } from '@/components/ui/ResizableDivider'
+import { TimelineView } from '@/components/timeline/TimelineView'
 import { formatDeadline } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/stores/chatStore'
@@ -40,7 +41,7 @@ export function WorkspaceClient({
   project, userId, userRole, initialSections, initialTasks, initialChecklistItems,
   members, aiContext, currentUserName,
 }: Props) {
-  const [view, setView] = useState<'graph' | 'list' | 'docs'>('graph')
+  const [view, setView] = useState<'graph' | 'list' | 'timeline' | 'docs'>('graph')
   const [drawerTask, setDrawerTask] = useState<Task | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [liveSections, setLiveSections] = useState(initialSections)
@@ -169,7 +170,7 @@ export function WorkspaceClient({
         <div className="flex items-center gap-3">
           {/* Tab switcher */}
           <div className="flex items-center border rounded-lg overflow-hidden text-xs">
-            {(['graph', 'list', 'docs'] as const).map(v => (
+            {(['graph', 'list', 'timeline', 'docs'] as const).map(v => (
               <button
                 key={v}
                 onClick={() => { setView(v); reloadData() }}
@@ -177,7 +178,7 @@ export function WorkspaceClient({
                   view === v ? 'bg-gray-900 text-white' : 'text-muted-foreground hover:bg-gray-50'
                 }`}
               >
-                {v === 'graph' ? '🗺 Graph' : v === 'list' ? '☰ List' : '📁 Tài liệu'}
+                {v === 'graph' ? '🗺 Graph' : v === 'list' ? '☰ List' : v === 'timeline' ? '📅 Timeline' : '📁 Tài liệu'}
               </button>
             ))}
           </div>
@@ -247,6 +248,18 @@ export function WorkspaceClient({
                   initialTasks={liveTasks}
                 />
               </div>
+            </div>
+          )}
+
+          {view === 'timeline' && (
+            <div className="flex-1 overflow-hidden min-w-0">
+              <TimelineView
+                project={project}
+                tasks={liveTasks}
+                sections={liveSections}
+                userId={userId}
+                onTaskClick={handleOpenDrawer}
+              />
             </div>
           )}
 
