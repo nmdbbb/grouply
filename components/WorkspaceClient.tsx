@@ -9,6 +9,7 @@ import { ChecklistSidebar } from '@/components/checklist/ChecklistSidebar'
 import { ContributionBar } from '@/components/contribution/ContributionBar'
 import { TaskDrawer } from '@/components/task/TaskDrawer'
 import { DocumentsTab } from '@/components/documents/DocumentsTab'
+import { ResizableDivider } from '@/components/ui/ResizableDivider'
 import { formatDeadline } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/stores/chatStore'
@@ -46,7 +47,18 @@ export function WorkspaceClient({
   const [liveTasks, setLiveTasks] = useState(initialTasks)
   const [deleting, setDeleting] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(240)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [chatWidth, setChatWidth] = useState(320)
   useEffect(() => setMounted(true), [])
+
+  const resizeSidebar = useCallback((delta: number) => {
+    setSidebarWidth(w => Math.max(160, Math.min(480, w + delta)))
+  }, [])
+
+  const resizeChat = useCallback((delta: number) => {
+    setChatWidth(w => Math.max(240, Math.min(600, w - delta)))
+  }, [])
 
   const router = useRouter()
   const supabase = createClient()
@@ -186,15 +198,20 @@ export function WorkspaceClient({
       <main className="flex-1 overflow-hidden flex flex-col">
         {/* Content row */}
         <div className="flex flex-1 overflow-hidden">
-          <ChecklistSidebar
-            projectId={project.id}
-            initialItems={initialChecklistItems}
-            initialTasks={liveTasks}
-          />
+          <div style={{ width: sidebarCollapsed ? 32 : sidebarWidth, minWidth: sidebarCollapsed ? 32 : sidebarWidth }} className="shrink-0 overflow-hidden transition-none">
+            <ChecklistSidebar
+              projectId={project.id}
+              initialItems={initialChecklistItems}
+              initialTasks={liveTasks}
+              onCollapsedChange={setSidebarCollapsed}
+            />
+          </div>
+
+          {!sidebarCollapsed && <ResizableDivider onResize={resizeSidebar} />}
 
           {view === 'graph' && (
-            <div className="flex flex-1 overflow-hidden">
-              <div className="flex-1 relative overflow-hidden">
+            <div className="flex flex-1 overflow-hidden min-w-0">
+              <div className="flex-1 relative overflow-hidden min-w-0">
                 <TaskGraph
                   projectId={project.id}
                   userId={userId}
@@ -206,7 +223,8 @@ export function WorkspaceClient({
                   onOpenDrawer={handleOpenDrawer}
                 />
               </div>
-              <div className="w-80 shrink-0">
+              <ResizableDivider onResize={resizeChat} />
+              <div style={{ width: chatWidth, minWidth: chatWidth }} className="shrink-0 overflow-hidden">
                 <ChatPanel
                   projectId={project.id}
                   context={aiContext}
@@ -220,7 +238,7 @@ export function WorkspaceClient({
           )}
 
           {view === 'list' && (
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto min-w-0">
               <div className="max-w-4xl mx-auto px-6 py-6">
                 <TaskList
                   projectId={project.id}
@@ -233,14 +251,15 @@ export function WorkspaceClient({
           )}
 
           {view === 'docs' && (
-            <div className="flex flex-1 overflow-hidden">
-              <div className="flex-1 overflow-hidden bg-gray-50">
+            <div className="flex flex-1 overflow-hidden min-w-0">
+              <div className="flex-1 overflow-hidden bg-gray-50 min-w-0">
                 <DocumentsTab
                   projectId={project.id}
                   onAnalyze={handleAnalyzeDoc}
                 />
               </div>
-              <div className="w-80 shrink-0">
+              <ResizableDivider onResize={resizeChat} />
+              <div style={{ width: chatWidth, minWidth: chatWidth }} className="shrink-0 overflow-hidden">
                 <ChatPanel
                   projectId={project.id}
                   context={aiContext}
