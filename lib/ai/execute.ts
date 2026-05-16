@@ -59,6 +59,16 @@ export async function executeToolCall(
         })
         return { toolName: name, result: load }
       }
+      case 'read_tasks_by_section': {
+        let query = supabase
+          .from('tasks')
+          .select('id, name, status, type, assignee_id, section_id, deadline, is_optional, assignee:profiles!tasks_assignee_id_fkey(id, name), section:sections(id, name)')
+          .eq('project_id', projectId)
+        if (input.section_id) query = query.eq('section_id', input.section_id as string)
+        if (input.status) query = query.eq('status', input.status as string)
+        const { data } = await query.order('created_at')
+        return { toolName: name, result: data ?? [] }
+      }
       case 'add_task': {
         // Resolve section name → id nếu AI truyền tên thay vì id
         let sectionId = (input.section_id as string) || null

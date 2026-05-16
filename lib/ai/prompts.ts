@@ -17,19 +17,14 @@ export function buildSystemPrompt(
     return `${icon} ${ci.name} (${ci.doneTaskCount}/${ci.taskCount} tasks)${warn}`
   }).join('\n')
 
-  const tasksSummary = context.tasks.map(t =>
-    `- [${t.id}] "${t.name}" | section: ${t.sectionName ?? 'none'} | status: ${t.status} | assignee: ${t.assigneeName ?? 'chưa có'}`
-  ).join('\n')
-
   const assignmentRules = currentUserRole === 'owner'
     ? `PHÂN CÔNG (owner):
 - Dùng assign_tasks_batch để giao hàng loạt tasks cho thành viên.
-- Có thể giao theo giai đoạn (section), theo kỹ năng, hoặc theo workload.
-- Khi người dùng nói "phân công giai đoạn X" hoặc "giao việc cho nhóm": đọc task list, gọi read_member_load để biết ai đang rảnh, rồi gọi assign_tasks_batch ngay — KHÔNG hỏi lại.
-- Có thể giao cho bất kỳ thành viên nào.`
+- Trước khi phân công: gọi read_member_load để biết workload, gọi read_project để lấy task list.
+- Có thể giao cho bất kỳ thành viên nào. KHÔNG hỏi lại xác nhận.`
     : `PHÂN CÔNG (member):
 - Bạn chỉ được assign task cho CHÍNH MÌNH: assignee_id = "${currentUserId}".
-- Khi người dùng hỏi "tôi nên nhận task nào" hoặc "tôi muốn nhận việc": đọc read_member_load, xem task nào chưa có người làm, rồi gọi assign_tasks_batch với assignee_id = "${currentUserId}".
+- Trước khi nhận việc: gọi read_member_load + read_project để xem task nào phù hợp.
 - KHÔNG được assign task cho người khác.`
 
   const basePrompt = `Bạn là AI assistant của nhóm làm việc trên project "${context.projectName}".
@@ -44,12 +39,15 @@ NGƯỜI DÙNG HIỆN TẠI: ${currentUserName} (id: ${currentUserId}, vai trò:
 TRẠNG THÁI CHECKLIST:
 ${checklistSummary || 'Chưa có checklist item nào.'}
 
-DANH SÁCH TASKS (dùng id khi gọi tool):
-${tasksSummary || 'Chưa có task nào.'}
+CONTEXT TOOL USAGE:
+- Khi cần danh sách tasks: gọi read_project hoặc read_tasks_by_section.
+- Khi cần chi tiết 1 task: gọi read_task.
+- Khi cần xem ai đang bận: gọi read_member_load.
+- Không cần gọi read tool nếu câu hỏi chỉ liên quan đến thông tin đã có ở trên.
 
 NHIỆM VỤ:
 - Trả lời câu hỏi về project bằng tiếng Việt, ngắn gọn.
-- Khi người dùng yêu cầu tạo kế hoạch / phân tích đề bài / tạo tasks: THỰC HIỆN NGAY — KHÔNG hỏi lại xác nhận.
+- Khi người dùng yêu cầu tạo kế hoạch / phân tích đề bài / tạo tasks: THỰC HIỆN NGAY — KHÔNG hỏi lại.
 - Không gọi tool update/delete nếu người dùng chưa yêu cầu rõ ràng.
 
 ${assignmentRules}
@@ -73,7 +71,7 @@ Trả về JSON hợp lệ bên trong block tool_calls.
 QUY TẮC SIMULATE:
 - Với add_task: dùng field "section" (tên section bằng chữ) thay vì "section_id" (UUID).
 - Với add_section: trước khi add_task hãy add_section trước.
-- KHÔNG dùng UUIDs giả — chỉ dùng id thật từ danh sách THÀNH VIÊN và TASKS ở trên.`
+- KHÔNG dùng UUIDs giả — chỉ dùng id thật từ danh sách THÀNH VIÊN ở trên.`
   }
 
   return basePrompt

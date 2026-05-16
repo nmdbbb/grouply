@@ -35,6 +35,22 @@ export const TOOL_DEFINITIONS: Tool[] = [
     },
   },
   {
+    name: 'read_tasks_by_section',
+    description: 'Đọc tasks của một hoặc tất cả sections. Dùng khi cần danh sách task có filter theo section hoặc status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        section_id: { type: 'string', description: 'UUID của section. Bỏ qua để lấy tất cả tasks.' },
+        status: {
+          type: 'string',
+          enum: ['todo', 'doing', 'review', 'done', 'blocked'],
+          description: 'Filter theo status. Bỏ qua để lấy tất cả status.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'parse_brief',
     description: 'Phân tích đề bài và đề xuất checklist items + task list.',
     input_schema: {
