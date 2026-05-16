@@ -33,6 +33,7 @@ export async function executeToolCall(
           .from('tasks')
           .select('*, assignee:profiles!tasks_assignee_id_fkey(id, name, avatar_url), claims:task_claims(*, profile:profiles(id, name, avatar_url)), documents:task_documents(*)')
           .eq('id', input.task_id as string)
+          .eq('project_id', projectId)
           .single()
         return { toolName: name, result: data }
       }
@@ -74,9 +75,9 @@ export async function executeToolCall(
         let sectionId = (input.section_id as string) || null
         const sectionName = input.section as string
         if (!sectionId && sectionName) {
-          const { data: sec } = await supabase
-            .from('sections').select('id').eq('project_id', projectId).ilike('name', `%${sectionName}%`).limit(1).single()
-          sectionId = sec?.id ?? null
+          const { data: secs } = await supabase
+            .from('sections').select('id').eq('project_id', projectId).ilike('name', `%${sectionName}%`).limit(1)
+          sectionId = secs?.[0]?.id ?? null
         }
         // Auto-position: stack tasks vertically within section (20px top + 80px per existing task)
         let posX = (input.pos_x as number) || 20
