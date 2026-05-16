@@ -7,6 +7,8 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  replyTo?: string
+  attachmentName?: string
 }
 
 export interface ToolCall {
@@ -26,21 +28,31 @@ export interface ChatState {
   ghostPreview: GhostPreview | null
   mode: ChatMode
   loading: boolean
+  streamingContent: string
+  replyTo: ChatMessage | null
+  attachedFile: { name: string; text: string } | null
 
   addMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => void
+  updateStreamingContent: (delta: string) => void
+  flushStreaming: () => void
   clearPending: () => void
   setMode: (mode: ChatMode) => void
   setLoading: (v: boolean) => void
   setPending: (toolCalls: ToolCall[], preview: GhostPreview) => void
+  setReplyTo: (msg: ChatMessage | null) => void
+  setAttachedFile: (file: { name: string; text: string } | null) => void
   reset: () => void
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   pendingToolCalls: [],
   ghostPreview: null,
   mode: 'api',
   loading: false,
+  streamingContent: '',
+  replyTo: null,
+  attachedFile: null,
 
   addMessage: (msg) => set(state => ({
     messages: [...state.messages, {
@@ -50,9 +62,29 @@ export const useChatStore = create<ChatState>((set) => ({
     }],
   })),
 
+  updateStreamingContent: (delta) => set(state => ({
+    streamingContent: state.streamingContent + delta,
+  })),
+
+  flushStreaming: () => {
+    const { streamingContent, messages } = get()
+    if (!streamingContent) return
+    set({
+      messages: [...messages, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: streamingContent,
+        timestamp: new Date(),
+      }],
+      streamingContent: '',
+    })
+  },
+
   clearPending: () => set({ pendingToolCalls: [], ghostPreview: null }),
   setMode: (mode) => set({ mode }),
   setLoading: (loading) => set({ loading }),
   setPending: (pendingToolCalls, ghostPreview) => set({ pendingToolCalls, ghostPreview }),
-  reset: () => set({ messages: [], pendingToolCalls: [], ghostPreview: null }),
+  setReplyTo: (replyTo) => set({ replyTo }),
+  setAttachedFile: (attachedFile) => set({ attachedFile }),
+  reset: () => set({ messages: [], pendingToolCalls: [], ghostPreview: null, streamingContent: '', replyTo: null, attachedFile: null }),
 }))
