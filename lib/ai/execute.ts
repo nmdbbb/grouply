@@ -1,5 +1,6 @@
 import { buildProjectContext } from './context'
 import { buildGhostPreview } from './preview'
+import { searchDocuments } from './retrieval'
 import type { ToolCall } from '@/stores/chatStore'
 
 export { buildGhostPreview }
@@ -24,6 +25,16 @@ export async function executeToolCall(
 
   try {
     switch (name) {
+      case 'search_documents': {
+        const chunks = await searchDocuments(input.query as string, projectId, supabase)
+        if (chunks.length === 0) {
+          return { toolName: name, result: 'Không tìm thấy tài liệu nào liên quan. Project chưa có tài liệu hoặc thông tin này không có trong tài liệu đã upload.' }
+        }
+        const formatted = chunks.map((c, i) =>
+          `[${i + 1}] Từ "${c.document_name}" (độ liên quan: ${(c.similarity * 100).toFixed(0)}%):\n${c.content}`
+        ).join('\n\n')
+        return { toolName: name, result: formatted }
+      }
       case 'read_project': {
         const context = await buildProjectContext(projectId)
         return { toolName: name, result: context }

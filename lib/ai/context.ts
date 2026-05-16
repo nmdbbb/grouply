@@ -60,7 +60,7 @@ export async function buildProjectContext(projectId: string): Promise<ProjectCon
   ] = await Promise.all([
     supabase.from('projects').select('*').eq('id', projectId).single(),
     supabase.from('project_members').select('*, profile:profiles(id, name)').eq('project_id', projectId),
-    supabase.from('tasks').select('*, assignee:profiles(id, name)').eq('project_id', projectId),
+    supabase.from('tasks').select('*, assignee:profiles!tasks_assignee_id_fkey(id, name)').eq('project_id', projectId),
     supabase.from('sections').select('*').eq('project_id', projectId).order('ord'),
     supabase.from('checklist_items').select('*').eq('project_id', projectId).order('ord'),
   ])

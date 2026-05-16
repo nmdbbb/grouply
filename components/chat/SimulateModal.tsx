@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { parseSimulateResponse } from '@/lib/ai/simulate'
-import { buildGhostPreview } from '@/lib/ai/execute'
+import { buildGhostPreview } from '@/lib/ai/preview'
 import type { ToolCall, GhostPreview } from '@/stores/chatStore'
 
 interface Props {
@@ -18,6 +18,7 @@ export function SimulateModal({ open, prompt, onClose, onParsed }: Props) {
   const [step, setStep] = useState<1 | 2>(1)
   const [response, setResponse] = useState('')
   const [copyLabel, setCopyLabel] = useState('Copy prompt')
+  const [parseWarning, setParseWarning] = useState('')
 
   async function handleCopy() {
     await navigator.clipboard.writeText(prompt)
@@ -25,8 +26,22 @@ export function SimulateModal({ open, prompt, onClose, onParsed }: Props) {
     setTimeout(() => setCopyLabel('Copy prompt'), 2000)
   }
 
+  const WRITE_TOOLS = new Set(['add_task', 'update_task', 'delete_task', 'add_section', 'add_checklist_item', 'link_task_to_item', 'set_dependency', 'remove_dependency'])
+
   function handleParse() {
-    const toolCalls = parseSimulateResponse(response)
+    const allToolCalls = parseSimulateResponse(response)
+    const toolCalls = allToolCalls.filter(tc => WRITE_TOOLS.has(tc.name))
+
+    if (toolCalls.length === 0) {
+      if (allToolCalls.length > 0) {
+        setParseWarning(`AI chưa tạo sections/tasks (chỉ có: ${allToolCalls.map(t => t.name).join(', ')}). Hãy trả lời "Có, hãy tạo ngay" trong Claude.ai để AI tạo, rồi copy response đó về đây.`)
+      } else {
+        setParseWarning('Không tìm thấy tool calls nào. Hãy đảm bảo paste đúng response từ Claude.ai bao gồm block <tool_calls>.')
+      }
+      return
+    }
+
+    setParseWarning('')
     const preview = buildGhostPreview(toolCalls)
     const textPart = response.replace(/<tool_calls>[\s\S]*<\/tool_calls>/, '').trim()
     onParsed(toolCalls, preview, textPart || response)
@@ -52,8 +67,14 @@ export function SimulateModal({ open, prompt, onClose, onParsed }: Props) {
           </div>
         ) : (
           <div className="flex flex-col gap-3 flex-1 overflow-hidden">
-            <p className="text-sm text-muted-foreground">Paste toàn bộ response từ Claude.ai vào đây rồi nhấn Parse.</p>
-            <Textarea value={response} onChange={e => setResponse(e.target.value)} placeholder="Paste response..." className="flex-1 text-sm resize-none" rows={12} />
+            <p className="text-sm text-muted-foreground">
+              Paste toàn bộ response từ Claude.ai vào đây rồi nhấn Parse.{' '}
+              <strong>Lưu ý:</strong> nếu AI hỏi xác nhận (ví dụ "Bạn có muốn tạo không?"), hãy trả lời "Có" trong Claude.ai để AI tạo sections/tasks, rồi copy response đó về đây.
+            </p>
+            <Textarea value={response} onChange={e => { setResponse(e.target.value); setParseWarning('') }} placeholder="Paste response..." className="flex-1 text-sm resize-none" rows={12} />
+            {parseWarning && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">{parseWarning}</p>
+            )}
             <div className="flex gap-2">
               <Button onClick={handleParse} disabled={!response.trim()}>Parse & Preview</Button>
               <Button variant="outline" onClick={() => setStep(1)}>← Quay lại</Button>

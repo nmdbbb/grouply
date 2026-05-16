@@ -32,10 +32,11 @@ interface Props {
   members: { id: string; name: string; avatar_url: string | null }[]
   onToggleView: () => void
   currentView: 'graph' | 'list'
+  onOpenDrawer: (task: Task) => void
 }
 
 export function TaskGraph({
-  projectId, userId, initialTasks, initialSections, members, onToggleView, currentView,
+  projectId, userId, initialTasks, initialSections, members, onToggleView, currentView, onOpenDrawer,
 }: Props) {
   const supabase = createClient()
   const { nodes, edges, ghostNodes, ghostEdges, onNodesChange, onEdgesChange, buildFromData, removeTaskNode } = useGraphStore()
@@ -44,15 +45,17 @@ export function TaskGraph({
 
   const reload = useCallback(async () => {
     const [{ data: tasks }, { data: sections }] = await Promise.all([
-      supabase.from('tasks').select('*, assignee:profiles(*)').eq('project_id', projectId).order('created_at'),
+      supabase.from('tasks').select('*, assignee:profiles!tasks_assignee_id_fkey(id, name, avatar_url)').eq('project_id', projectId).order('created_at'),
       supabase.from('sections').select('*').eq('project_id', projectId).order('ord'),
     ])
-    buildFromData((tasks ?? []) as Task[], (sections ?? []) as Section[], membersRef.current, reload)
-  }, [projectId, buildFromData, supabase])
+    buildFromData((tasks ?? []) as Task[], (sections ?? []) as Section[], membersRef.current, userId, reload, onOpenDrawer)
+  }, [projectId, buildFromData, supabase]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dataKey = `${initialTasks.length}-${initialSections.length}`
 
   useEffect(() => {
-    buildFromData(initialTasks, initialSections, members, reload)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    buildFromData(initialTasks, initialSections, membersRef.current, userId, reload, onOpenDrawer)
+  }, [dataKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const channel = supabase

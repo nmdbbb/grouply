@@ -18,16 +18,24 @@ export function RegisterForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } },
     })
-    if (error) {
-      toast.error('Lỗi đăng ký', { description: error.message })
-    } else {
-      toast.success('Đăng ký thành công', { description: 'Kiểm tra email để xác nhận tài khoản.' })
+    if (signUpError) {
+      toast.error('Lỗi đăng ký', { description: signUpError.message })
+      setLoading(false)
+      return
+    }
+    // Tự đăng nhập luôn, không cần confirm email
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+    if (loginError) {
+      toast.success('Đăng ký thành công! Hãy đăng nhập.')
       router.push('/login')
+    } else {
+      router.push('/dashboard')
+      router.refresh()
     }
     setLoading(false)
   }

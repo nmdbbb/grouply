@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { WorkspaceClient } from '@/components/WorkspaceClient'
 import { buildProjectContext } from '@/lib/ai/context'
-import type { Task, Section } from '@/types'
+import type { Task, Section, ChecklistItem } from '@/types'
+
+export const dynamic = 'force-dynamic'
 
 export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,11 +19,12 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
     .from('project_members').select('role').eq('project_id', id).eq('user_id', user.id).single()
   if (!membership) redirect('/dashboard')
 
-  const [{ data: sections }, { data: tasks }, { data: members }, { data: profile }] = await Promise.all([
+  const [{ data: sections }, { data: tasks }, { data: members }, { data: profile }, { data: checklistItems }] = await Promise.all([
     supabase.from('sections').select('*').eq('project_id', id).order('ord'),
-    supabase.from('tasks').select('*, assignee:profiles(*)').eq('project_id', id).order('created_at'),
+    supabase.from('tasks').select('*, assignee:profiles!tasks_assignee_id_fkey(id, name, avatar_url)').eq('project_id', id).order('created_at'),
     supabase.from('project_members').select('*, profile:profiles(id, name, avatar_url)').eq('project_id', id),
     supabase.from('profiles').select('name').eq('id', user.id).single(),
+    supabase.from('checklist_items').select('*').eq('project_id', id).order('ord'),
   ])
 
   const memberProfiles = (members ?? []).map(m => ({
@@ -40,6 +43,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
       userRole={membership.role as 'owner' | 'member'}
       initialSections={(sections ?? []) as Section[]}
       initialTasks={(tasks ?? []) as Task[]}
+      initialChecklistItems={(checklistItems ?? []) as ChecklistItem[]}
       members={memberProfiles}
       aiContext={aiContext}
       currentUserName={(profile as any)?.name ?? 'Unknown'}

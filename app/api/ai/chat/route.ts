@@ -5,6 +5,7 @@ import { buildProjectContext } from '@/lib/ai/context'
 import { buildSystemPrompt } from '@/lib/ai/prompts'
 import { TOOL_DEFINITIONS } from '@/lib/ai/tools'
 import { executeToolCall, executeToolCalls, buildGhostPreview } from '@/lib/ai/execute'
+import { runGroqAgenticLoop } from '@/lib/ai/groq'
 import type { ToolCall } from '@/stores/chatStore'
 
 // Tools that mutate data — require user confirmation before executing
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!user) return new Response('Unauthorized', { status: 401 })
 
   const body = await req.json()
-  const { project_id, message, conversation_history = [], commit_tool_calls, attached_text, reply_to } = body
+  const { project_id, message, conversation_history = [], commit_tool_calls, attached_text, reply_to, provider = 'anthropic' } = body
 
   // --- Commit path (unchanged) ---
   if (commit_tool_calls && Array.isArray(commit_tool_calls)) {
@@ -34,13 +35,15 @@ export async function POST(req: NextRequest) {
     .from('project_members').select('role').eq('project_id', project_id).eq('user_id', user.id).single()
   if (!membership) return new Response('Forbidden', { status: 403 })
 
-  const apiKey = profile?.byok_key
+  const byokKey = profile?.byok_key
     ? Buffer.from(profile.byok_key, 'base64').toString('utf-8')
-    : process.env.ANTHROPIC_API_KEY!
+    : null
+
+  const anthropicKey = byokKey ?? process.env.ANTHROPIC_API_KEY!
+  const groqKey = process.env.GROQ_API_KEY!
 
   const context = await buildProjectContext(project_id)
   const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id)
-  const anthropic = new Anthropic({ apiKey })
 
   // Build user message content — inject attached file text and reply quote inline
   let userContent = message as string
@@ -64,6 +67,22 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        if (provider === 'groq') {
+          await runGroqAgenticLoop({
+            apiKey: groqKey,
+            systemPrompt,
+            messages: trimmedHistory.concat([{ role: 'user', content: userContent }]),
+            projectId: project_id,
+            userId: user.id,
+            supabase,
+            send,
+          })
+          send({ type: 'done' })
+          return
+        }
+
+        const anthropic = new Anthropic({ apiKey: anthropicKey })
+
         // Agentic loop — max 8 iterations to avoid infinite loops
         for (let iteration = 0; iteration < 8; iteration++) {
           const response = await anthropic.messages.create({

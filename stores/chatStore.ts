@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 export type ChatMode = 'api' | 'simulate'
+export type ChatProvider = 'anthropic' | 'groq'
 
 export interface ChatMessage {
   id: string
@@ -27,6 +28,7 @@ export interface ChatState {
   pendingToolCalls: ToolCall[]
   ghostPreview: GhostPreview | null
   mode: ChatMode
+  provider: ChatProvider
   loading: boolean
   streamingContent: string
   replyTo: ChatMessage | null
@@ -37,6 +39,7 @@ export interface ChatState {
   flushStreaming: () => void
   clearPending: () => void
   setMode: (mode: ChatMode) => void
+  setProvider: (provider: ChatProvider) => void
   setLoading: (v: boolean) => void
   setPending: (toolCalls: ToolCall[], preview: GhostPreview) => void
   setReplyTo: (msg: ChatMessage | null) => void
@@ -49,6 +52,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   pendingToolCalls: [],
   ghostPreview: null,
   mode: 'api',
+  provider: 'anthropic',
   loading: false,
   streamingContent: '',
   replyTo: null,
@@ -82,6 +86,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   clearPending: () => set({ pendingToolCalls: [], ghostPreview: null }),
   setMode: (mode) => set({ mode }),
+  setProvider: (provider) => set({ provider }),
   setLoading: (loading) => set({ loading }),
   setPending: (pendingToolCalls, ghostPreview) => set({ pendingToolCalls, ghostPreview }),
   setReplyTo: (replyTo) => set({ replyTo }),

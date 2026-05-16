@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,7 +22,6 @@ type FormData = z.infer<typeof schema>
 export function CreateProjectForm({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -32,37 +30,23 @@ export function CreateProjectForm({ userId }: { userId: string }) {
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .insert({
+      const res = await fetch('/api/project/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: data.name,
           subject: data.subject || null,
           deadline: data.deadline,
-          owner_id: userId,
-          description: data.brief || null,
-        })
-        .select()
-        .single()
-
-      if (projectError) throw projectError
-
-      await supabase.from('sections').insert({
-        project_id: project.id,
-        name: 'Chung',
-        color: '#EEEDFE',
-        ord: 0,
+          brief: data.brief || null,
+        }),
       })
-
-      await supabase.from('project_members').insert({
-        project_id: project.id,
-        user_id: userId,
-        role: 'owner',
-      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
 
       if (data.brief?.trim()) {
-        localStorage.setItem(`grouply-brief-${project.id}`, data.brief.trim())
+        localStorage.setItem(`grouply-brief-${json.projectId}`, data.brief.trim())
       }
-      router.push(`/project/${project.id}?parseBrief=1`)
+      router.push(`/project/${json.projectId}?parseBrief=1`)
       router.refresh()
     } catch (err: any) {
       toast.error('Lỗi', { description: err.message })

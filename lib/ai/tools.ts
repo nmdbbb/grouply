@@ -2,6 +2,17 @@ import type { Tool } from '@anthropic-ai/sdk/resources'
 
 export const TOOL_DEFINITIONS: Tool[] = [
   {
+    name: 'search_documents',
+    description: 'Tìm kiếm thông tin trong tài liệu và đề bài đã upload của project. Dùng khi cần đọc nội dung đề bài, yêu cầu dự án, số lượng thành viên, deadline theo đề, hoặc bất kỳ thông tin nào từ file tài liệu.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Câu hỏi hoặc từ khóa cần tìm trong tài liệu' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'read_project',
     description: 'Đọc toàn bộ state của project: tasks, members, checklist items, sections.',
     input_schema: {

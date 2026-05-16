@@ -6,7 +6,9 @@ import type { Task, Section } from '@/types'
 export interface TaskNodeData {
   task: Task
   members: { id: string; name: string; avatar_url: string | null }[]
+  currentUserId: string
   onUpdated: () => void
+  onOpenDrawer: (task: Task) => void
   [key: string]: unknown
 }
 
@@ -30,7 +32,7 @@ export interface GraphState {
   setGhostPreview: (nodes: Node[], edges: Edge[]) => void
   clearGhost: () => void
 
-  buildFromData: (tasks: Task[], sections: Section[], members: { id: string; name: string; avatar_url: string | null }[], onUpdated: () => void) => void
+  buildFromData: (tasks: Task[], sections: Section[], members: { id: string; name: string; avatar_url: string | null }[], currentUserId: string, onUpdated: () => void, onOpenDrawer: (task: Task) => void) => void
   updateTaskNode: (task: Task) => void
   removeTaskNode: (taskId: string) => void
 }
@@ -55,22 +57,25 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setGhostPreview: (ghostNodes, ghostEdges) => set({ ghostNodes, ghostEdges }),
   clearGhost: () => set({ ghostNodes: [], ghostEdges: [] }),
 
-  buildFromData: (tasks, sections, members, onUpdated) => {
-    const sectionNodes: Node[] = sections.map((s, i) => ({
-      id: `section-${s.id}`,
-      type: 'sectionNode',
-      position: { x: i * 320, y: 0 },
-      data: { section: s, onUpdated } as SectionNodeData,
-      style: { width: 300, minHeight: 200, backgroundColor: s.color + '80', border: 'none' },
-    }))
+  buildFromData: (tasks, sections, members, currentUserId, onUpdated, onOpenDrawer) => {
+    const sectionNodes: Node[] = sections.map((s, i) => {
+      const sectionTaskCount = tasks.filter(t => t.section_id === s.id).length
+      const dynamicHeight = Math.max(220, 80 + sectionTaskCount * 90)
+      return {
+        id: `section-${s.id}`,
+        type: 'sectionNode',
+        position: { x: i * 320, y: 0 },
+        data: { section: s, onUpdated } as SectionNodeData,
+        style: { width: 300, height: dynamicHeight, backgroundColor: s.color + '80', border: 'none' },
+      }
+    })
 
     const taskNodes: Node[] = tasks.map(t => ({
       id: t.id,
       type: 'taskNode',
       position: { x: t.pos_x, y: t.pos_y },
       parentId: t.section_id ? `section-${t.section_id}` : undefined,
-      extent: t.section_id ? ('parent' as const) : undefined,
-      data: { task: t, members, onUpdated } as TaskNodeData,
+      data: { task: t, members, currentUserId, onUpdated, onOpenDrawer } as TaskNodeData,
     }))
 
     const depEdges: Edge[] = tasks

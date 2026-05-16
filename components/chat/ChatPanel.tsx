@@ -30,10 +30,10 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const {
-    messages, pendingToolCalls, ghostPreview, mode, loading, streamingContent,
+    messages, pendingToolCalls, ghostPreview, mode, provider, loading, streamingContent,
     replyTo, attachedFile,
     addMessage, updateStreamingContent, flushStreaming,
-    setLoading, setPending, clearPending, setMode, setReplyTo, setAttachedFile,
+    setLoading, setPending, clearPending, setMode, setProvider, setReplyTo, setAttachedFile,
   } = useChatStore()
   const { setGhostPreview, clearGhost } = useGraphStore()
 
@@ -76,6 +76,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
           conversation_history: messages.slice(-12).map(m => ({ role: m.role, content: m.content })),
           reply_to: capturedReplyTo,
           attached_text: capturedFile?.text ?? null,
+          provider,
         }),
       })
 
@@ -124,7 +125,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
     }
     setLoading(false)
   }, [
-    input, loading, mode, messages, projectId, context,
+    input, loading, mode, provider, messages, projectId, context,
     currentUserName, currentUserRole, userId,
     replyTo, attachedFile,
     addMessage, updateStreamingContent, flushStreaming,
@@ -143,7 +144,25 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
   return (
     <div className="flex flex-col h-full border-l bg-white">
       <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-        <span className="text-sm font-medium">AI Chat</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium">AI Chat</span>
+          <div className="flex items-center gap-0.5 bg-gray-100 rounded p-0.5">
+            <button
+              title="Anthropic Claude"
+              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${provider === 'anthropic' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setProvider('anthropic')}
+            >
+              Claude
+            </button>
+            <button
+              title="Groq (Kimi K2)"
+              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${provider === 'groq' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setProvider('groq')}
+            >
+              Groq
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
           <button
             className={`text-xs px-2 py-1 rounded-md ${mode === 'api' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground'}`}
