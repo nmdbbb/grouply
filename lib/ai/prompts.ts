@@ -6,16 +6,16 @@ export function buildSystemPrompt(
   currentUserRole: string,
   currentUserId: string,
   mode: 'api' | 'simulate' = 'api',
-  provider?: string,
+  provider?: 'groq',
 ): string {
   // [1] IDENTITY
   const identity = `Bạn là AI assistant của nhóm, project: "${context.projectName}".
 Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm nay: ${context.today}. Còn ${context.daysRemaining} ngày.`
 
   // [2] MEMBERS
-  const memberLines = context.members
-    .map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' [nhóm trưởng]' : ''}`)
-    .join('\n')
+  const memberLines = context.members.length === 0
+    ? '(Chưa có thành viên)'
+    : context.members.map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' [nhóm trưởng]' : ''}`).join('\n')
   const members = `THÀNH VIÊN:\n${memberLines}\nNGƯỜI DÙNG: ${currentUserName} (id: ${currentUserId}, vai trò: ${currentUserRole})`
 
   // [3] CHECKLIST
