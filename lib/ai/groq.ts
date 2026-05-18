@@ -19,9 +19,9 @@ const WRITE_TOOLS = new Set([
 const GROQ_TOOL_DESC_OVERRIDES: Record<string, string> = {
   search_documents:      'Search project documents for requirements, criteria, member count. Call FIRST before planning.',
   add_section:           'Create a project phase/section. Must be called BEFORE add_task.',
-  add_task:              'Create a task inside a section. Requires section name or section_id.',
+  add_task:              'Create a task. Provide section name or section_id to place it in a section.',
   assign_tasks_batch:    'Assign tasks to members. Comma-separated UUIDs in task_ids field.',
-  read_project:          'Get all tasks, sections, members. Call when asked about progress.',
+  read_project:          'Get all tasks, sections, members. Call to inspect current project state.',
   read_member_load:      'Get per-member workload. Call before assigning tasks.',
   update_task:           'Update a task field. Requires task_id.',
   delete_task:           'Delete a task. Owner only.',
@@ -30,7 +30,7 @@ const GROQ_TOOL_DESC_OVERRIDES: Record<string, string> = {
   add_checklist_item:    'Add a deliverable item to the checklist.',
   link_task_to_item:     'Link a task to a checklist item.',
   set_dependency:        'Set a task as blocked by another task.',
-  remove_dependency:     'Remove a task dependency.',
+  remove_dependency:     'Remove all dependencies from a task (requires task_id).',
 }
 
 // Flattened schemas — nested objects/arrays cause failed_generation in Llama
