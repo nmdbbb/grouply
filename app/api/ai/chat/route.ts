@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const groqKey = process.env.GROQ_API_KEY!
 
   const context = await buildProjectContext(project_id)
-  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id)
+  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, 'api', provider === 'groq' ? 'groq' : undefined)
 
   // Build user message content — inject attached file text and reply quote inline
   let userContent = message as string
