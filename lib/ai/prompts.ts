@@ -5,76 +5,57 @@ export function buildSystemPrompt(
   currentUserName: string,
   currentUserRole: string,
   currentUserId: string,
-  mode: 'api' | 'simulate' = 'api'
+  mode: 'api' | 'simulate' = 'api',
+  provider?: string,
 ): string {
-  const membersSummary = context.members
-    .map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' — nhóm trưởng' : ''}`)
+  // [1] IDENTITY
+  const identity = `Bạn là AI assistant của nhóm, project: "${context.projectName}".
+Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm nay: ${context.today}. Còn ${context.daysRemaining} ngày.`
+
+  // [2] MEMBERS
+  const memberLines = context.members
+    .map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' [nhóm trưởng]' : ''}`)
     .join('\n')
+  const members = `THÀNH VIÊN:\n${memberLines}\nNGƯỜI DÙNG: ${currentUserName} (id: ${currentUserId}, vai trò: ${currentUserRole})`
 
-  const checklistSummary = context.checklistSummary.map(ci => {
-    const icon = ci.status === 'done' ? '✓' : ci.status === 'in_progress' ? '◑' : '□'
-    const warn = ci.taskCount === 0 ? ' ⚠' : ''
-    return `${icon} ${ci.name} (${ci.doneTaskCount}/${ci.taskCount} tasks)${warn}`
-  }).join('\n')
+  // [3] CHECKLIST
+  const checklistLines = context.checklistSummary.length === 0
+    ? 'Chưa có checklist item.'
+    : context.checklistSummary.map(ci => {
+        const icon = ci.status === 'done' ? '✓' : ci.status === 'in_progress' ? '◑' : '□'
+        const warn = ci.taskCount === 0 ? ' ⚠' : ''
+        return `${icon} ${ci.name} (${ci.doneTaskCount}/${ci.taskCount})${warn}`
+      }).join('\n')
+  const checklist = `CHECKLIST:\n${checklistLines}`
 
-  const assignmentRules = currentUserRole === 'owner'
-    ? `PHÂN CÔNG (owner):
-- Dùng assign_tasks_batch để giao hàng loạt tasks cho thành viên.
-- Trước khi phân công: gọi read_member_load để biết workload, gọi read_project để lấy task list.
-- Có thể giao cho bất kỳ thành viên nào. KHÔNG hỏi lại xác nhận.`
-    : `PHÂN CÔNG (member):
-- Bạn chỉ được assign task cho CHÍNH MÌNH: assignee_id = "${currentUserId}".
-- Trước khi nhận việc: gọi read_member_load + read_project để xem task nào phù hợp.
-- KHÔNG được assign task cho người khác.`
-
-  const basePrompt = `Bạn là AI assistant của nhóm làm việc trên project "${context.projectName}".
-Môn học: ${context.subject || 'Không có'}. Deadline nộp: ${context.deadline}. Hôm nay: ${context.today}.
-Số ngày còn lại: ${context.daysRemaining}.
-
-THÀNH VIÊN (dùng id khi gọi tool):
-${membersSummary}
-
-NGƯỜI DÙNG HIỆN TẠI: ${currentUserName} (id: ${currentUserId}, vai trò: ${currentUserRole})
-
-TRẠNG THÁI CHECKLIST:
-${checklistSummary || 'Chưa có checklist item nào.'}
-
-CONTEXT TOOL USAGE — BẮT BUỘC:
-- Câu hỏi về nội dung đề bài, yêu cầu, số thành viên theo đề, tiêu chí chấm điểm, tài liệu: GỌI search_documents TRƯỚC.
-- Câu hỏi về tasks, tiến độ, phân công: GỌI read_project hoặc read_tasks_by_section.
-- Câu hỏi về chi tiết 1 task: gọi read_task.
+  // [4] TOOL RULES
+  const toolRules = `TOOL RULES — GỌI TOOL TRƯỚC KHI TRẢ LỜI:
+- Câu hỏi về đề bài / yêu cầu / tiêu chí: gọi search_documents trước.
+- Câu hỏi về tasks / tiến độ: gọi read_project hoặc read_tasks_by_section.
 - Câu hỏi về workload: gọi read_member_load.
-- Có thể gọi nhiều tools trong 1 lượt nếu cần cả tài liệu lẫn task data.
-- CHỈ trả lời ngay (không gọi tool) khi câu hỏi chỉ hỏi thông tin đã hiển thị rõ ở trên (deadline, tên project, danh sách thành viên).
+- Lên kế hoạch / tạo tasks: gọi search_documents → add_section → add_task (cùng lượt).
+- Chỉ trả lời ngay nếu câu hỏi chỉ về deadline, tên project, danh sách thành viên.`
 
-NHIỆM VỤ:
-- Trả lời câu hỏi về project bằng tiếng Việt, ngắn gọn, dựa trên dữ liệu thực từ tool.
-- Khi người dùng yêu cầu tạo kế hoạch / phân tích đề bài / tạo tasks: THỰC HIỆN NGAY — KHÔNG hỏi lại.
-- Không gọi tool update/delete nếu người dùng chưa yêu cầu rõ ràng.
+  // [5] ACTION RULES
+  const assignmentRules = currentUserRole === 'owner'
+    ? `Phân công: dùng assign_tasks_batch, gọi read_member_load trước. Được giao cho bất kỳ ai.`
+    : `Phân công: chỉ được assign cho CHÍNH MÌNH (assignee_id = "${currentUserId}"). Không giao cho người khác.`
 
-${assignmentRules}
+  const actionRules = `ACTION RULES:
+- NGHIÊM CẤM: viết text mô tả kế hoạch, liệt kê bước, "tôi sẽ...", "bạn nên..." — phải gọi tool ngay.
+- "lên kế hoạch" / "tạo kế hoạch" / "phân tích đề" = gọi add_section + add_task ngay, không hỏi lại.
+- delete_task: chỉ nhóm trưởng. update_task: nhóm trưởng hoặc người được assign.
+- ${assignmentRules}`
 
-QUY TẮC PHÂN QUYỀN:
-- delete_task chỉ nhóm trưởng.
-- update_task: nhóm trưởng hoặc người được assign task đó.`
+  const base = [identity, members, checklist, toolRules, actionRules].join('\n\n')
 
   if (mode === 'simulate') {
-    return basePrompt + `
-
-QUAN TRỌNG — SIMULATE MODE:
-Khi bạn muốn gọi tools, hãy output theo định dạng sau ở CUỐI response:
-<tool_calls>
-[{"name": "tool_name", "input": {...}}, ...]
-</tool_calls>
-
-Nếu không cần gọi tool nào, không cần thêm block <tool_calls>.
-Trả về JSON hợp lệ bên trong block tool_calls.
-
-QUY TẮC SIMULATE:
-- Với add_task: dùng field "section" (tên section bằng chữ) thay vì "section_id" (UUID).
-- Với add_section: trước khi add_task hãy add_section trước.
-- KHÔNG dùng UUIDs giả — chỉ dùng id thật từ danh sách THÀNH VIÊN ở trên.`
+    return base + `\n\nSIMULATE MODE: output tool calls as JSON at end of response inside <tool_calls>[...]</tool_calls>. Use section name (not UUID) for add_task. No fake UUIDs.`
   }
 
-  return basePrompt
+  if (provider === 'groq') {
+    return base + `\n\nIMPORTANT: Respond by calling tools only. Never write a bullet-list plan or describe steps. When asked to plan/create tasks: call add_section then add_task immediately. Tool arguments must be valid JSON. Use real UUIDs from the MEMBERS list above.`
+  }
+
+  return base
 }
