@@ -113,3 +113,29 @@ export interface ProjectWithDetails extends Project {
   checklist_items: ChecklistItem[]
   tasks: Task[]
 }
+
+export type VectorChunk = {
+  source: 'vector'
+  similarity: number
+  content: string
+  document_name: string
+  chunk_index: number
+  doc_type?: string
+  metadata?: Record<string, unknown>
+}
+
+export type HybridChunk = {
+  source: 'hybrid'
+  combined_score: number
+  content: string
+  document_name: string
+  chunk_index: number
+  doc_type?: string
+  metadata?: Record<string, unknown>
+}
+
+export type RetrievedChunk = VectorChunk | HybridChunk
+
+export function getChunkScore(chunk: RetrievedChunk): number {
+  return chunk.source === 'vector' ? chunk.similarity : chunk.combined_score
+}
