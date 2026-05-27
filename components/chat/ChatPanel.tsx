@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import type { ProjectContext } from '@/lib/ai/context'
 import type { ToolCall, GhostPreview } from '@/stores/chatStore'
+import { getMessageText } from '@/lib/chat/messageUtils'
 
 interface Props {
   projectId: string
@@ -80,7 +81,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       if (mode === 'simulate') {
         const history = messages.map(m => ({
           role: m.role as 'user' | 'assistant',
-          content: msgText(m),
+          content: getMessageText(m),
         }))
         const prompt = buildSimulatePrompt(context, history, input, currentUserName, currentUserRole, userId)
         setSimulatePrompt(prompt)
@@ -98,14 +99,6 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(toolCalls, context)
       setGhostPreview(ghostNodes, ghostEdges)
     }
-  }
-
-  function msgText(msg: any): string {
-    if (typeof msg.content === 'string') return msg.content
-    if (Array.isArray(msg.parts)) {
-      return msg.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
-    }
-    return ''
   }
 
   return (
@@ -154,7 +147,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
         )}
 
         {messages.map(m => {
-          const text = msgText(m)
+          const text = getMessageText(m)
           if (!text) return null
           return (
             <Message
@@ -209,7 +202,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
             size="sm"
             onClick={() => {
               if (mode === 'simulate') {
-                const history = messages.map(m => ({ role: m.role as 'user' | 'assistant', content: msgText(m) }))
+                const history = messages.map(m => ({ role: m.role as 'user' | 'assistant', content: getMessageText(m) }))
                 const prompt = buildSimulatePrompt(context, history, input, currentUserName, currentUserRole, userId)
                 setSimulatePrompt(prompt)
                 setShowSimulate(true)
