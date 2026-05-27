@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { parseSimulateResponse } from '@/lib/ai/simulate'
 import { buildGhostPreview } from '@/lib/ai/preview'
 import type { ToolCall, GhostPreview } from '@/stores/chatStore'
+import { WRITE_TOOLS } from '@/lib/ai/constants'
 
 interface Props {
   open: boolean
@@ -25,8 +26,6 @@ export function SimulateModal({ open, prompt, onClose, onParsed }: Props) {
     setCopyLabel('Đã copy!')
     setTimeout(() => setCopyLabel('Copy prompt'), 2000)
   }
-
-  const WRITE_TOOLS = new Set(['add_task', 'update_task', 'delete_task', 'add_section', 'add_checklist_item', 'link_task_to_item', 'set_dependency', 'remove_dependency'])
 
   function handleParse() {
     const allToolCalls = parseSimulateResponse(response)
