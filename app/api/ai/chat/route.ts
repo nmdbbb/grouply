@@ -1,20 +1,14 @@
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGroq } from '@ai-sdk/groq'
+import { streamText, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, convertToModelMessages } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { buildProjectContext } from '@/lib/ai/context'
 import { buildSystemPrompt } from '@/lib/ai/prompts'
-import { TOOL_DEFINITIONS } from '@/lib/ai/tools'
-import { executeToolCall, executeToolCalls, buildGhostPreview } from '@/lib/ai/execute'
-import { runGroqAgenticLoop } from '@/lib/ai/groq'
+import { buildTools, WRITE_TOOLS, executeToolCalls } from '@/lib/ai/tools'
+import { buildGhostPreview } from '@/lib/ai/preview'
+import { indexActivity } from '@/lib/ai/activity-log'
 import type { ToolCall } from '@/stores/chatStore'
-
-// Tools that mutate data — require user confirmation before executing
-const WRITE_TOOLS = new Set([
-  'add_task', 'update_task', 'delete_task',
-  'add_section', 'add_checklist_item',
-  'link_task_to_item', 'set_dependency', 'remove_dependency',
-  'assign_tasks_batch',
-])
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -22,11 +16,27 @@ export async function POST(req: NextRequest) {
   if (!user) return new Response('Unauthorized', { status: 401 })
 
   const body = await req.json()
-  const { project_id, message, conversation_history = [], commit_tool_calls, attached_text, reply_to, provider = 'anthropic' } = body
+  const {
+    project_id, messages: clientMessages = [],
+    commit_tool_calls, attached_text, reply_to,
+    provider = 'anthropic',
+  } = body
 
-  // --- Commit path (unchanged) ---
+  // --- Commit path ---
   if (commit_tool_calls && Array.isArray(commit_tool_calls)) {
-    const results = await executeToolCalls(commit_tool_calls as ToolCall[], project_id, user.id, supabase)
+    const toolCalls = commit_tool_calls as ToolCall[]
+    const results = await executeToolCalls(toolCalls, project_id, user.id, supabase)
+
+    const context = await buildProjectContext(project_id)
+    const memberNames = Object.fromEntries(context.members.map(m => [m.id, m.name]))
+    const taskNames = Object.fromEntries(context.tasks.map(t => [t.id, t.name]))
+    indexActivity(
+      project_id,
+      toolCalls.map(tc => ({ name: tc.name, input: tc.input })),
+      { memberNames, taskNames },
+      supabase
+    ).catch(err => console.error('indexActivity failed:', err))
+
     return Response.json({ executed: true, results })
   }
 
@@ -39,131 +49,80 @@ export async function POST(req: NextRequest) {
     ? Buffer.from(profile.byok_key, 'base64').toString('utf-8')
     : null
 
-  const anthropicKey = byokKey ?? process.env.ANTHROPIC_API_KEY!
-  const groqKey = process.env.GROQ_API_KEY!
-
   const context = await buildProjectContext(project_id)
   const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, 'api', provider === 'groq' ? 'groq' : undefined)
 
-  // Build user message content — inject attached file text and reply quote inline
-  let userContent = message as string
-  if (reply_to) userContent = `[Trả lời: "${reply_to}"]\n\n${userContent}`
-  if (attached_text) userContent += `\n\n---\n[NỘI DUNG FILE ĐÍNH KÈM]\n${attached_text}`
+  // Build model messages from UI message history + inject context into last user message
+  const uiMessages = clientMessages as any[]
+  const lastUserIdx = [...uiMessages].reverse().findIndex(m => m.role === 'user')
+  if (lastUserIdx >= 0) {
+    const idx = uiMessages.length - 1 - lastUserIdx
+    const lastUser = uiMessages[idx]
+    let text = typeof lastUser.content === 'string'
+      ? lastUser.content
+      : (lastUser.parts?.find((p: any) => p.type === 'text')?.text ?? '')
+    if (reply_to) text = `[Trả lời: "${reply_to}"]\n\n${text}`
+    if (attached_text) text += `\n\n---\n[NỘI DUNG FILE ĐÍNH KÈM]\n${attached_text}`
+    // Patch in place
+    uiMessages[idx] = {
+      ...lastUser,
+      content: typeof lastUser.content === 'string' ? text : lastUser.content,
+      parts: lastUser.parts
+        ? lastUser.parts.map((p: any) => p.type === 'text' ? { ...p, text } : p)
+        : undefined,
+    }
+  }
 
-  // Sliding window: keep last 12 messages (6 turns) to bound token cost
-  const trimmedHistory = (conversation_history as { role: string; content: string }[]).slice(-12)
+  let aiMessages: { role: 'user' | 'assistant'; content: string }[]
+  try {
+    aiMessages = await convertToModelMessages(uiMessages.slice(-12)) as any
+  } catch {
+    aiMessages = uiMessages.slice(-12).filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string' ? m.content : (m.parts?.find((p: any) => p.type === 'text')?.text ?? ''),
+    }))
+  }
 
-  const messages: Anthropic.MessageParam[] = [
-    ...trimmedHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    { role: 'user', content: userContent },
-  ]
+  const tools = buildTools(project_id, user.id, supabase)
 
-  // --- SSE streaming response ---
-  const encoder = new TextEncoder()
-  const stream = new ReadableStream({
-    async start(controller) {
-      function send(obj: object) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`))
-      }
+  const getModel = () => {
+    if (provider === 'groq') {
+      const groq = createGroq({ apiKey: process.env.GROQ_API_KEY! })
+      return groq('llama-3.3-70b-versatile')
+    }
+    const anthropic = createAnthropic({ apiKey: byokKey ?? process.env.ANTHROPIC_API_KEY! })
+    return anthropic('claude-sonnet-4-20250514')
+  }
 
-      try {
-        if (provider === 'groq') {
-          await runGroqAgenticLoop({
-            apiKey: groqKey,
-            systemPrompt,
-            messages: trimmedHistory.concat([{ role: 'user', content: userContent }]),
-            projectId: project_id,
-            userId: user.id,
-            supabase,
-            send,
-          })
-          send({ type: 'done' })
-          return
-        }
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      const result = streamText({
+        model: getModel(),
+        system: systemPrompt,
+        messages: aiMessages as any,
+        tools,
+        stopWhen: stepCountIs(8),
+        onStepFinish: async ({ toolCalls: stepToolCalls }) => {
+          if (!stepToolCalls?.length) return
 
-        const anthropic = new Anthropic({ apiKey: anthropicKey })
+          const writeCalls = stepToolCalls.filter(tc => WRITE_TOOLS.has(tc.toolName))
+          if (writeCalls.length === 0) return
 
-        // Agentic loop — max 8 iterations to avoid infinite loops
-        for (let iteration = 0; iteration < 8; iteration++) {
-          const response = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4096,
-            system: systemPrompt,
-            tools: TOOL_DEFINITIONS,
-            messages,
-          })
+          const pendingCalls: ToolCall[] = writeCalls.map(tc => ({
+            id: tc.toolCallId,
+            name: tc.toolName,
+            input: tc.input as Record<string, unknown>,
+          }))
+          const preview = buildGhostPreview(pendingCalls)
 
-          // Stream text blocks
-          const toolUses: Anthropic.ToolUseBlock[] = []
+          // Send write tools to client via custom data chunk
+          ;(writer.write as any)({ type: 'data-write-tools', data: { tool_calls: pendingCalls, preview } })
+        },
+      })
 
-          for (const block of response.content) {
-            if (block.type === 'text') {
-              // Stream text in ~50 char chunks to simulate streaming
-              const chunks = block.text.match(/[\s\S]{1,50}/g) ?? [block.text]
-              for (const chunk of chunks) {
-                send({ type: 'text_delta', text: chunk })
-              }
-            } else if (block.type === 'tool_use') {
-              toolUses.push(block)
-            }
-          }
-
-          // Append assistant turn to messages for next iteration
-          messages.push({ role: 'assistant', content: response.content })
-
-          // If no tool calls or end_turn — we're done
-          if (response.stop_reason === 'end_turn' || toolUses.length === 0) break
-
-          // Separate read vs write tools
-          const readTools = toolUses.filter(t => !WRITE_TOOLS.has(t.name))
-          const writeTools = toolUses.filter(t => WRITE_TOOLS.has(t.name))
-
-          // If there are write tools — stop the loop, send for user confirmation
-          if (writeTools.length > 0) {
-            const writeCalls: ToolCall[] = writeTools.map(t => ({
-              id: t.id,
-              name: t.name,
-              input: t.input as Record<string, unknown>,
-            }))
-            const preview = buildGhostPreview(writeCalls)
-            send({ type: 'write_tools', tool_calls: writeCalls, preview })
-            break
-          }
-
-          // Execute read tools silently, feed results back
-          const toolResults: Anthropic.ToolResultBlockParam[] = []
-          for (const tool of readTools) {
-            send({ type: 'tool_running', tool: tool.name })
-            const result = await executeToolCall(
-              { id: tool.id, name: tool.name, input: tool.input as Record<string, unknown> },
-              project_id,
-              user.id,
-              supabase,
-            )
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: tool.id,
-              content: JSON.stringify(result.result),
-            })
-          }
-
-          messages.push({ role: 'user', content: toolResults })
-        }
-
-        send({ type: 'done' })
-      } catch (err: any) {
-        send({ type: 'error', message: err.message })
-      } finally {
-        controller.close()
-      }
+      writer.merge(result.toUIMessageStream())
     },
   })
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  })
+  return createUIMessageStreamResponse({ stream })
 }
