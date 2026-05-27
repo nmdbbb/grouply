@@ -1,9 +1,9 @@
-const CHUNK_SIZE = 500   // characters (không phải tokens, đủ nhỏ cho embed)
-const OVERLAP = 80
+import { CHUNK_SIZE, CHUNK_OVERLAP, MIN_CHUNK_LENGTH } from './constants'
+const OVERLAP = CHUNK_OVERLAP
 
-export function chunkText(text: string): string[] {
+export function chunkText(text: string): Array<{ content: string; chunk_index: number }> {
   const cleaned = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
-  if (cleaned.length <= CHUNK_SIZE) return [cleaned]
+  if (cleaned.length <= CHUNK_SIZE) return [{ content: cleaned, chunk_index: 0 }]
 
   const chunks: string[] = []
   let start = 0
@@ -11,7 +11,6 @@ export function chunkText(text: string): string[] {
   while (start < cleaned.length) {
     let end = start + CHUNK_SIZE
 
-    // Cắt tại ranh giới câu/dòng để tránh cắt giữa chừng
     if (end < cleaned.length) {
       const breakPoints = ['\n\n', '\n', '. ', '! ', '? ', ' ']
       for (const bp of breakPoints) {
@@ -27,5 +26,34 @@ export function chunkText(text: string): string[] {
     start = end - OVERLAP
   }
 
-  return chunks.filter(c => c.length > 20)
+  return chunks
+    .filter(c => c.length > MIN_CHUNK_LENGTH)
+    .map((content, i) => ({ content, chunk_index: i }))
+}
+
+export function detectDocSubType(
+  filename: string,
+  text: string
+): 'rubric' | 'assignment_brief' | 'reference' | 'general' {
+  const name = filename.toLowerCase()
+  const body = text.toLowerCase()
+
+  if (
+    name.includes('rubric') ||
+    body.includes('tiêu chí chấm') ||
+    body.includes('grading criteria') ||
+    /\b\d+\s*%\s*.{3,40}(điểm|point|mark)/i.test(text)
+  ) return 'rubric'
+
+  if (
+    name.includes('đề bài') || name.includes('assignment') || name.includes('brief') ||
+    body.includes('yêu cầu bài tập') || body.includes('nộp bài') ||
+    body.includes('submission deadline') || body.includes('deliverable')
+  ) return 'assignment_brief'
+
+  if (
+    name.includes('tài liệu') || name.includes('reference') || name.includes('handbook')
+  ) return 'reference'
+
+  return 'general'
 }
