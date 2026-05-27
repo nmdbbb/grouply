@@ -1,7 +1,24 @@
 import { buildSystemPrompt } from './prompts'
-import { TOOL_DEFINITIONS } from './tools'
 import type { ProjectContext } from './context'
 import type { ToolCall } from '@/stores/chatStore'
+
+const SIMULATE_TOOL_DESCRIPTIONS = [
+  { name: 'read_project', description: 'Đọc toàn bộ state của project: tasks, members, checklist items, sections.' },
+  { name: 'read_task', description: 'Đọc chi tiết một task.' },
+  { name: 'read_member_load', description: 'Xem workload của từng thành viên.' },
+  { name: 'read_tasks_by_section', description: 'Đọc tasks của một hoặc tất cả sections.' },
+  { name: 'search_documents', description: 'Tìm kiếm ngữ nghĩa trong tài liệu và lịch sử hoạt động.' },
+  { name: 'parse_brief', description: 'Phân tích đề bài và đề xuất checklist items + task list.' },
+  { name: 'add_task', description: 'Thêm task mới vào project.' },
+  { name: 'update_task', description: 'Cập nhật thông tin của một task.' },
+  { name: 'delete_task', description: 'Xóa task. Chỉ owner.' },
+  { name: 'add_section', description: 'Thêm section mới.' },
+  { name: 'add_checklist_item', description: 'Thêm deliverable item vào checklist.' },
+  { name: 'link_task_to_item', description: 'Liên kết task với checklist item.' },
+  { name: 'set_dependency', description: 'Tạo dependency: task bị block bởi task khác.' },
+  { name: 'remove_dependency', description: 'Xóa dependency của task.' },
+  { name: 'assign_tasks_batch', description: 'Phân công hàng loạt tasks cho các thành viên.' },
+]
 
 export function buildSimulatePrompt(
   context: ProjectContext,
@@ -13,7 +30,7 @@ export function buildSimulatePrompt(
 ): string {
   const systemPrompt = buildSystemPrompt(context, currentUserName, currentUserRole, currentUserId, 'simulate')
 
-  const toolsDescription = TOOL_DEFINITIONS.map(t =>
+  const toolsDescription = SIMULATE_TOOL_DESCRIPTIONS.map(t =>
     `**${t.name}**: ${t.description}`
   ).join('\n')
 

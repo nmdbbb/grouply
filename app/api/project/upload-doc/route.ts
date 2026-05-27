@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { chunkText } from '@/lib/ai/chunker'
+import { chunkText, detectDocSubType } from '@/lib/ai/chunker'
 import { embedTexts } from '@/lib/ai/embed'
 
 export async function POST(request: NextRequest) {
@@ -71,15 +71,18 @@ export async function POST(request: NextRequest) {
     const documentId = docRecord.id
     ;(async () => {
       try {
+        const subType = detectDocSubType(file.name, fullText)
         const chunks = chunkText(fullText)
-        const embeddings = await embedTexts(chunks)
+        const embeddings = await embedTexts(chunks.map(c => c.content))
 
-        const rows = chunks.map((content, i) => ({
+        const rows = chunks.map((chunk, i) => ({
           project_id: projectId,
           document_id: documentId,
-          content,
+          content: chunk.content,
           embedding: JSON.stringify(embeddings[i]),
-          chunk_index: i,
+          chunk_index: chunk.chunk_index,
+          doc_type: 'project_doc',
+          metadata: { sub_type: subType },
         }))
 
         await service.from('document_chunks').insert(rows)

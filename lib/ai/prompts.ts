@@ -34,7 +34,18 @@ Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm na
 - Câu hỏi về tasks / tiến độ: gọi read_project hoặc read_tasks_by_section.
 - Câu hỏi về workload: gọi read_member_load.
 - Lên kế hoạch / tạo tasks: gọi search_documents → add_section → add_task (cùng lượt).
-- Chỉ trả lời ngay nếu câu hỏi chỉ về deadline, tên project, danh sách thành viên.`
+- Chỉ trả lời ngay nếu câu hỏi chỉ về deadline, tên project, danh sách thành viên.
+
+Khi nào gọi search_documents:
+- Hỏi về nội dung đề bài, yêu cầu, rubric, tiêu chí chấm điểm → doc_type="project_doc"
+- Hỏi về lịch sử: "AI đã làm gì?", "tại sao task X assign cho Y?", "trước đây nhóm đã điều chỉnh gì?" → doc_type="activity_log"
+- Query chứa tên người, con số, thuật ngữ cụ thể → thêm use_hybrid=true
+
+Khi đề xuất thay đổi (replan, điều chỉnh task, phân công lại):
+1. Gọi read_project để nắm trạng thái hiện tại
+2. Gọi search_documents với doc_type="activity_log" để xem lịch sử
+3. Đề xuất dựa trên cả hai nguồn
+4. Nếu có precedent từ activity_log, cite: "Trước đây nhóm đã..."`
 
   // [5] ACTION RULES
   const assignmentRules = currentUserRole === 'owner'

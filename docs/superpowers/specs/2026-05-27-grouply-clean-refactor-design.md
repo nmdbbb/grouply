@@ -182,7 +182,7 @@ function convertMessages(messages: UIMessage[]): CoreMessage[] {
 - `ContributionBar`, `TaskDrawer`
 - No fetch calls
 
-**WorkspaceClient.tsx** becomes a thin wrapper that composes the two (or is deleted if page.tsx can import them directly).
+**WorkspaceClient.tsx** becomes a thin wrapper (~20 lines) that composes the two, preserving the import in `app/project/[id]/page.tsx` without changes.
 
 ### ChatPanel.tsx (237 lines → 3 files)
 

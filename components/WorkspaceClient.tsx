@@ -13,9 +13,6 @@ import { ResizableDivider } from '@/components/ui/ResizableDivider'
 import { TimelineView } from '@/components/timeline/TimelineView'
 import { formatDeadline } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { useChatStore } from '@/stores/chatStore'
-import { useGraphStore } from '@/stores/graphStore'
-import { buildGhostNodesFromToolCalls } from '@/lib/ai/ghostBuilder'
 import { createClient } from '@/lib/supabase/client'
 import type { Task, Section, Project, ChecklistItem } from '@/types'
 import type { ProjectContext } from '@/lib/ai/context'
@@ -90,37 +87,16 @@ export function WorkspaceClient({
   }, [project.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const searchParams = useSearchParams()
-  const { addMessage, setLoading, setPending } = useChatStore()
-  const { setGhostPreview } = useGraphStore()
+  const [pendingBrief, setPendingBrief] = useState<string | null>(null)
 
   function handleOpenDrawer(task: Task) {
     setDrawerTask(task)
     setDrawerOpen(true)
   }
 
-  async function handleAnalyzeDoc(text: string, fileName: string) {
+  function handleAnalyzeDoc(text: string, fileName: string) {
+    // Switch to graph view where ChatPanel is visible; user interacts with AI through ChatPanel
     setView('graph')
-    setLoading(true)
-    addMessage({ role: 'user', content: `Phân tích tài liệu "${fileName}" và tạo kế hoạch...` })
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: project.id,
-          message: `Hãy phân tích tài liệu yêu cầu sau và đề xuất checklist items + task list cho nhóm ${members.length} người, deadline ${project.deadline}:\n\n${text}`,
-          conversation_history: [],
-        }),
-      })
-      const data = await res.json()
-      if (data.text) addMessage({ role: 'assistant', content: data.text })
-      if (data.tool_calls?.length > 0 && data.preview) {
-        setPending(data.tool_calls, data.preview)
-        const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(data.tool_calls, aiContext)
-        setGhostPreview(ghostNodes, ghostEdges)
-      }
-    } catch {}
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -128,32 +104,8 @@ export function WorkspaceClient({
     const brief = localStorage.getItem(`grouply-brief-${project.id}`)
     if (!brief) return
     localStorage.removeItem(`grouply-brief-${project.id}`)
-
-    async function sendBrief() {
-      setLoading(true)
-      addMessage({ role: 'user', content: 'Phân tích đề bài và tạo kế hoạch...' })
-      try {
-        const res = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            project_id: project.id,
-            message: `Hãy phân tích đề bài sau và đề xuất checklist items + task list cho nhóm ${members.length} người, deadline ${project.deadline}:\n\n${brief}`,
-            conversation_history: [],
-          }),
-        })
-        const data = await res.json()
-        if (data.text) addMessage({ role: 'assistant', content: data.text })
-        if (data.tool_calls?.length > 0 && data.preview) {
-          setPending(data.tool_calls, data.preview)
-          const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(data.tool_calls, aiContext)
-          setGhostPreview(ghostNodes, ghostEdges)
-        }
-      } catch {}
-      setLoading(false)
-    }
-
-    sendBrief()
+    setPendingBrief(brief)
+    setView('graph')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const graphMembers = members.map(m => ({ id: m.id, name: m.name, avatar_url: m.avatar_url }))

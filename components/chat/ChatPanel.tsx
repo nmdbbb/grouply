@@ -1,5 +1,7 @@
 'use client'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { useChat } from '@ai-sdk/react'
+import { DefaultChatTransport } from 'ai'
 import { useChatStore } from '@/stores/chatStore'
 import { useGraphStore } from '@/stores/graphStore'
 import { Message } from './Message'
@@ -12,7 +14,7 @@ import { buildGhostNodesFromToolCalls } from '@/lib/ai/ghostBuilder'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import type { ProjectContext } from '@/lib/ai/context'
-import type { ChatMessage, ToolCall, GhostPreview } from '@/stores/chatStore'
+import type { ToolCall, GhostPreview } from '@/stores/chatStore'
 
 interface Props {
   projectId: string
@@ -24,121 +26,86 @@ interface Props {
 }
 
 export function ChatPanel({ projectId, context, currentUserName, currentUserRole, userId, onAfterCommit }: Props) {
-  const [input, setInput] = useState('')
   const [showSimulate, setShowSimulate] = useState(false)
   const [simulatePrompt, setSimulatePrompt] = useState('')
+  const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const {
-    messages, pendingToolCalls, ghostPreview, mode, provider, loading, streamingContent,
+    pendingToolCalls, ghostPreview, mode, provider,
     replyTo, attachedFile,
-    addMessage, updateStreamingContent, flushStreaming,
-    setLoading, setPending, clearPending, setMode, setProvider, setReplyTo, setAttachedFile,
+    setPending, clearPending, setMode, setProvider, setReplyTo, setAttachedFile,
   } = useChatStore()
   const { setGhostPreview, clearGhost } = useGraphStore()
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streamingContent])
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/ai/chat',
+      body: {
+        project_id: projectId,
+        provider,
+        reply_to: replyTo?.content ?? null,
+        attached_text: attachedFile?.text ?? null,
+      },
+    }),
+    onData: (dataPart: any) => {
+      if (dataPart?.name === 'write-tools' && dataPart?.data) {
+        const { tool_calls, preview } = dataPart.data as { tool_calls: ToolCall[]; preview: GhostPreview }
+        setPending(tool_calls, preview)
+        const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(tool_calls, context)
+        setGhostPreview(ghostNodes, ghostEdges)
+      }
+    },
+    onFinish: () => {
+      setReplyTo(null)
+      setAttachedFile(null)
+    },
+  })
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim()
-    if (!text || loading) return
+  const isLoading = status === 'submitted' || status === 'streaming'
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoading])
+
+  function submitMessage() {
+    if (!input.trim()) return
+    sendMessage({ text: input })
     setInput('')
+  }
 
-    addMessage({
-      role: 'user',
-      content: text,
-      replyTo: replyTo?.content,
-      attachmentName: attachedFile?.name,
-    })
-
-    const capturedReplyTo = replyTo?.content ?? null
-    const capturedFile = attachedFile ?? null
-    setReplyTo(null)
-    setAttachedFile(null)
-    setLoading(true)
-
-    try {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
       if (mode === 'simulate') {
-        const history = messages.map(m => ({ role: m.role, content: m.content }))
-        const prompt = buildSimulatePrompt(context, history, text, currentUserName, currentUserRole, userId)
+        const history = messages.map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: msgText(m),
+        }))
+        const prompt = buildSimulatePrompt(context, history, input, currentUserName, currentUserRole, userId)
         setSimulatePrompt(prompt)
         setShowSimulate(true)
-        setLoading(false)
+        setInput('')
         return
       }
-
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: projectId,
-          message: text,
-          conversation_history: messages.slice(-12).map(m => ({ role: m.role, content: m.content })),
-          reply_to: capturedReplyTo,
-          attached_text: capturedFile?.text ?? null,
-          provider,
-        }),
-      })
-
-      if (!res.ok || !res.body) throw new Error('Request failed')
-
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const event = JSON.parse(line.slice(6))
-
-            if (event.type === 'text_delta') {
-              updateStreamingContent(event.text)
-            } else if (event.type === 'write_tools') {
-              flushStreaming()
-              const writeCalls = event.tool_calls as ToolCall[]
-              const preview = event.preview as GhostPreview
-              setPending(writeCalls, preview)
-              const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(writeCalls, context)
-              setGhostPreview(ghostNodes, ghostEdges)
-            } else if (event.type === 'done') {
-              flushStreaming()
-            } else if (event.type === 'error') {
-              flushStreaming()
-              addMessage({ role: 'assistant', content: `Lỗi: ${event.message}` })
-            }
-          } catch {
-            // malformed JSON line — skip
-          }
-        }
-      }
-    } catch {
-      flushStreaming()
-      addMessage({ role: 'assistant', content: 'Xin lỗi, có lỗi xảy ra. Thử lại nhé.' })
+      submitMessage()
     }
-    setLoading(false)
-  }, [
-    input, loading, mode, provider, messages, projectId, context,
-    currentUserName, currentUserRole, userId,
-    replyTo, attachedFile,
-    addMessage, updateStreamingContent, flushStreaming,
-    setLoading, setPending, setGhostPreview, setReplyTo, setAttachedFile,
-  ])
+  }
 
-  function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview, responseText: string) {
-    if (responseText) addMessage({ role: 'assistant', content: responseText })
+  function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview) {
     if (toolCalls.length > 0) {
       setPending(toolCalls, preview)
       const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(toolCalls, context)
       setGhostPreview(ghostNodes, ghostEdges)
     }
+  }
+
+  function msgText(msg: any): string {
+    if (typeof msg.content === 'string') return msg.content
+    if (Array.isArray(msg.parts)) {
+      return msg.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('')
+    }
+    return ''
   }
 
   return (
@@ -155,7 +122,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
               Claude
             </button>
             <button
-              title="Groq (Kimi K2)"
+              title="Groq (Llama 3.3 70B)"
               className={`text-xs px-1.5 py-0.5 rounded transition-colors ${provider === 'groq' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setProvider('groq')}
             >
@@ -180,28 +147,23 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        {messages.length === 0 && !streamingContent && (
+        {messages.length === 0 && !isLoading && (
           <p className="text-xs text-muted-foreground text-center mt-8">
             Hỏi AI về project, phân công task, hoặc paste đề bài để bắt đầu.
           </p>
         )}
 
-        {messages.map(m => (
-          <Message
-            key={m.id}
-            message={m}
-            onReply={setReplyTo}
-          />
-        ))}
-
-        {streamingContent && (
-          <div className="flex justify-start mb-3">
-            <div className="max-w-[85%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
-              {streamingContent}
-              <span className="inline-block w-0.5 h-3.5 bg-gray-500 ml-0.5 animate-pulse" />
-            </div>
-          </div>
-        )}
+        {messages.map(m => {
+          const text = msgText(m)
+          if (!text) return null
+          return (
+            <Message
+              key={m.id}
+              message={{ id: m.id, role: m.role as 'user' | 'assistant', content: text, timestamp: new Date() }}
+              onReply={setReplyTo}
+            />
+          )
+        })}
 
         {ghostPreview && pendingToolCalls.length > 0 && (
           <ActionPreviewCard
@@ -213,7 +175,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
           />
         )}
 
-        {loading && !streamingContent && (
+        {isLoading && (
           <div className="flex justify-start mb-3">
             <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm text-muted-foreground">
               Đang suy nghĩ...
@@ -238,12 +200,27 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+            onKeyDown={handleKeyDown}
             placeholder={mode === 'simulate' ? 'Nhập câu hỏi → xuất prompt...' : 'Nhập tin nhắn... (Enter để gửi)'}
             className="resize-none text-sm flex-1"
             rows={2}
           />
-          <Button size="sm" onClick={handleSend} disabled={loading || !input.trim()} className="self-end shrink-0">
+          <Button
+            size="sm"
+            onClick={() => {
+              if (mode === 'simulate') {
+                const history = messages.map(m => ({ role: m.role as 'user' | 'assistant', content: msgText(m) }))
+                const prompt = buildSimulatePrompt(context, history, input, currentUserName, currentUserRole, userId)
+                setSimulatePrompt(prompt)
+                setShowSimulate(true)
+                setInput('')
+                return
+              }
+              submitMessage()
+            }}
+            disabled={isLoading || !input.trim()}
+            className="self-end shrink-0"
+          >
             Gửi
           </Button>
         </div>
