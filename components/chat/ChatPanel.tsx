@@ -33,7 +33,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/ai/chat',
-      body: { project_id: projectId, provider, reply_to: replyTo?.content ?? null, attached_text: attachedFile?.text ?? null },
+      body: { project_id: projectId },
     }),
     onData: (dataPart: any) => {
       if (dataPart?.name === 'write-tools' && dataPart?.data) {
@@ -50,7 +50,9 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
 
   function submitMessage() {
     if (!input.trim() || !provider) return
-    sendMessage({ text: input })
+    sendMessage({ text: input }, {
+      body: { project_id: projectId, provider, reply_to: replyTo?.content ?? null, attached_text: attachedFile?.text ?? null },
+    })
     setInput('')
   }
 
