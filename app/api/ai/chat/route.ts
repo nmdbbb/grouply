@@ -51,7 +51,17 @@ export async function POST(req: NextRequest) {
     ? Buffer.from(byokKeys[providerId], 'base64').toString('utf-8')
     : process.env[PROVIDERS[providerId].envKey] ?? ''
 
-  const model = getModelInstance(providerId, rawKey)
+  console.log('[chat] provider:', providerId, 'hasKey:', Boolean(rawKey))
+
+  if (!rawKey) return new Response(`No API key configured for provider: ${providerId}`, { status: 400 })
+
+  let model: ReturnType<typeof getModelInstance>
+  try {
+    model = getModelInstance(providerId, rawKey)
+  } catch (err) {
+    console.error('[chat] getModelInstance failed:', err)
+    return new Response('Failed to initialize AI model', { status: 500 })
+  }
 
   const context = await buildProjectContext(project_id)
   const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, provider === 'groq' ? 'groq' : undefined)
@@ -93,40 +103,25 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'API key chưa được cấu hình cho provider này.' }, { status: 400 })
   }
 
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      try {
-        const result = streamText({
-          model,
-          system: systemPrompt,
-          messages: aiMessages as any,
-          tools,
-          stopWhen: stepCountIs(8),
-          onStepFinish: async ({ toolCalls: stepToolCalls }) => {
-            if (!stepToolCalls?.length) return
+  const allWriteCalls: ToolCall[] = []
 
-            const writeCalls = stepToolCalls.filter(tc => WRITE_TOOLS.has(tc.toolName))
-            if (writeCalls.length === 0) return
-
-            const pendingCalls: ToolCall[] = writeCalls.map(tc => ({
-              id: tc.toolCallId,
-              name: tc.toolName,
-              input: tc.input as Record<string, unknown>,
-            }))
-            const preview = buildGhostPreview(pendingCalls)
-
-            // Send write tools to client via custom data chunk
-            ;(writer.write as any)({ type: 'data-write-tools', data: { tool_calls: pendingCalls, preview } })
-          },
-        })
-
-        writer.merge(result.toUIMessageStream())
-      } catch (err) {
-        console.error('[chat/route] streamText error:', err)
-        throw err
-      }
+  const result = streamText({
+    model,
+    system: systemPrompt,
+    messages: aiMessages as any,
+    tools,
+    stopWhen: stepCountIs(8),
+    onStepFinish: async ({ toolCalls: stepToolCalls }: { toolCalls: any[] }) => {
+      if (!stepToolCalls?.length) return
+      const writeCalls = stepToolCalls.filter((tc: any) => WRITE_TOOLS.has(tc.toolName))
+      allWriteCalls.push(...writeCalls.map((tc: any) => ({
+        id: tc.toolCallId,
+        name: tc.toolName,
+        input: tc.input as Record<string, unknown>,
+      })))
     },
   })
 
-  return createUIMessageStreamResponse({ stream })
+  // Use toUIMessageStreamResponse directly — most compatible with useChat DefaultChatTransport
+  return (result as any).toUIMessageStreamResponse()
 }

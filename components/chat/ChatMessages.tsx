@@ -35,6 +35,7 @@ export function ChatMessages({
       )}
 
       {messages.map((m: any) => {
+        if (m.role === 'assistant') console.log('[msg]', m.id, JSON.stringify(m).slice(0, 500))
         const text = getMessageText(m)
         if (!text) return null
         return (
