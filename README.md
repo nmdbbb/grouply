@@ -43,6 +43,31 @@ Mọi thay đổi đồng bộ real-time cho toàn bộ thành viên trong nhóm
 
 ---
 
+## AI Tools
+
+AI có thể gọi các tools sau trong một lượt chat:
+
+| Tool | Mô tả |
+|---|---|
+| `read_project` | Đọc toàn bộ state: tasks, members, sections, checklist |
+| `read_task` | Chi tiết một task |
+| `read_member_load` | Workload từng thành viên |
+| `read_tasks_by_section` | Tasks theo section |
+| `search_documents` | Tìm kiếm semantic trong tài liệu nhóm |
+| `add_task` | Tạo task mới |
+| `update_task` | Cập nhật task |
+| `delete_task` | Xóa task (owner only) |
+| `add_section` | Tạo section mới |
+| `add_checklist_item` | Thêm deliverable vào checklist |
+| `link_task_to_item` | Gắn task với checklist item |
+| `set_dependency` | Tạo quan hệ blocking giữa tasks |
+| `remove_dependency` | Xóa dependency |
+| `assign_tasks_batch` | Phân công hàng loạt |
+
+Write tools yêu cầu user xác nhận trước khi áp dụng.
+
+---
+
 ## Tech Stack
 
 | Layer | Công nghệ |
