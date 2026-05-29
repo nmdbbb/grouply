@@ -1,13 +1,15 @@
+// components/chat/ChatInput.tsx
 'use client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { FileAttachButton } from './FileAttachButton'
 import { ReplyBar } from './ReplyBar'
+import { ProviderDropdown } from './ProviderDropdown'
+import type { ProviderId } from '@/lib/ai/providers'
 
 interface Props {
   input: string
-  mode: 'api' | 'simulate'
-  provider: 'anthropic' | 'groq'
+  provider: ProviderId | null
   isLoading: boolean
   replyTo: any | null
   attachedFile: { name: string; text: string } | null
@@ -17,47 +19,21 @@ interface Props {
   onClearReply: () => void
   onClearFile: () => void
   onSetFile: (file: { name: string; text: string }) => void
-  onSetProvider: (p: 'anthropic' | 'groq') => void
-  onSetMode: (m: 'api' | 'simulate') => void
-  onSimulateClick: () => void
+  onSetProvider: (p: ProviderId) => void
 }
 
 export function ChatInput({
-  input, mode, provider, isLoading,
+  input, provider, isLoading,
   replyTo, attachedFile,
   onInputChange, onKeyDown, onSend,
-  onClearReply, onClearFile, onSetFile,
-  onSetProvider, onSetMode, onSimulateClick,
+  onClearReply, onClearFile, onSetFile, onSetProvider,
 }: Props) {
   return (
     <>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium">AI Chat</span>
-          <div className="flex items-center gap-0.5 bg-gray-100 rounded p-0.5">
-            <button
-              title="Anthropic Claude"
-              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${provider === 'anthropic' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => onSetProvider('anthropic')}
-            >Claude</button>
-            <button
-              title="Groq (Llama 3.3 70B)"
-              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${provider === 'groq' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => onSetProvider('groq')}
-            >Groq</button>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-          <button
-            className={`text-xs px-2 py-1 rounded-md ${mode === 'api' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground'}`}
-            onClick={() => onSetMode('api')}
-          >🤖 API</button>
-          <button
-            className={`text-xs px-2 py-1 rounded-md ${mode === 'simulate' ? 'bg-white shadow-sm font-medium' : 'text-muted-foreground'}`}
-            onClick={() => onSetMode('simulate')}
-          >📋 Simulate</button>
-        </div>
+        <span className="text-sm font-medium">AI Chat</span>
+        <ProviderDropdown provider={provider} onSelect={onSetProvider} />
       </div>
 
       {/* Reply and file banners */}
@@ -77,17 +53,20 @@ export function ChatInput({
             value={input}
             onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={mode === 'simulate' ? 'Nhập câu hỏi → xuất prompt...' : 'Nhập tin nhắn... (Enter để gửi)'}
+            placeholder="Nhập tin nhắn... (Enter để gửi)"
             className="resize-none text-sm flex-1"
             rows={2}
           />
           <Button
             size="sm"
-            onClick={mode === 'simulate' ? onSimulateClick : onSend}
-            disabled={isLoading || !input.trim()}
+            onClick={onSend}
+            disabled={isLoading || !input.trim() || !provider}
             className="self-end shrink-0"
           >Gửi</Button>
         </div>
+        {!provider && (
+          <p className="text-xs text-muted-foreground mt-1.5 text-center">Chọn AI provider để bắt đầu</p>
+        )}
       </div>
     </>
   )
