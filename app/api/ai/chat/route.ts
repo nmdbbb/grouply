@@ -1,6 +1,4 @@
 import { NextRequest } from 'next/server'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGroq } from '@ai-sdk/groq'
 import { streamText, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, convertToModelMessages } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { buildProjectContext } from '@/lib/ai/context'
@@ -9,6 +7,8 @@ import { buildTools, WRITE_TOOLS, executeToolCalls } from '@/lib/ai/tools'
 import { buildGhostPreview } from '@/lib/ai/preview'
 import { indexActivity } from '@/lib/ai/activity-log'
 import type { ToolCall } from '@/stores/chatStore'
+import { PROVIDERS, getModelInstance } from '@/lib/ai/providers'
+import type { ProviderId } from '@/lib/ai/providers'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -40,14 +40,18 @@ export async function POST(req: NextRequest) {
     return Response.json({ executed: true, results })
   }
 
-  const { data: profile } = await supabase.from('profiles').select('name, byok_key').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('profiles').select('name, byok_keys').eq('id', user.id).single()
   const { data: membership } = await supabase
     .from('project_members').select('role').eq('project_id', project_id).eq('user_id', user.id).single()
   if (!membership) return new Response('Forbidden', { status: 403 })
 
-  const byokKey = profile?.byok_key
-    ? Buffer.from(profile.byok_key, 'base64').toString('utf-8')
-    : null
+  const byokKeys = (profile?.byok_keys ?? {}) as Record<string, string>
+  const providerId = (provider in PROVIDERS ? provider : 'anthropic') as ProviderId
+  const rawKey = byokKeys[providerId]
+    ? Buffer.from(byokKeys[providerId], 'base64').toString('utf-8')
+    : process.env[PROVIDERS[providerId].envKey] ?? ''
+
+  const model = getModelInstance(providerId, rawKey)
 
   const context = await buildProjectContext(project_id)
   const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, provider === 'groq' ? 'groq' : undefined)
@@ -85,19 +89,10 @@ export async function POST(req: NextRequest) {
 
   const tools = buildTools(project_id, user.id, supabase)
 
-  const getModel = () => {
-    if (provider === 'groq') {
-      const groq = createGroq({ apiKey: process.env.GROQ_API_KEY! })
-      return groq('llama-3.3-70b-versatile')
-    }
-    const anthropic = createAnthropic({ apiKey: byokKey ?? process.env.ANTHROPIC_API_KEY! })
-    return anthropic('claude-sonnet-4-20250514')
-  }
-
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const result = streamText({
-        model: getModel(),
+        model,
         system: systemPrompt,
         messages: aiMessages as any,
         tools,
