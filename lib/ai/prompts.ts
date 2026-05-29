@@ -5,7 +5,6 @@ export function buildSystemPrompt(
   currentUserName: string,
   currentUserRole: string,
   currentUserId: string,
-  mode: 'api' | 'simulate' = 'api',
   provider?: 'groq',
 ): string {
   // [1] IDENTITY
@@ -59,10 +58,6 @@ Khi đề xuất thay đổi (replan, điều chỉnh task, phân công lại):
 - ${assignmentRules}`
 
   const base = [identity, members, checklist, toolRules, actionRules].join('\n\n')
-
-  if (mode === 'simulate') {
-    return base + `\n\nSIMULATE MODE: output tool calls as JSON at end of response inside <tool_calls>[...]</tool_calls>. Use section name (not UUID) for add_task. No fake UUIDs.`
-  }
 
   if (provider === 'groq') {
     return base + `\n\nIMPORTANT: Respond by calling tools only. Never write a bullet-list plan or describe steps. When asked to plan/create tasks: call add_section then add_task immediately. Tool arguments must be valid JSON. Use real UUIDs from the MEMBERS list above.`

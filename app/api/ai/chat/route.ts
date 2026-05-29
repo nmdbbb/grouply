@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     : null
 
   const context = await buildProjectContext(project_id)
-  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, 'api', provider === 'groq' ? 'groq' : undefined)
+  const systemPrompt = buildSystemPrompt(context, profile?.name ?? 'Unknown', membership.role, user.id, provider === 'groq' ? 'groq' : undefined)
 
   // Build model messages from UI message history + inject context into last user message
   const uiMessages = clientMessages as any[]
