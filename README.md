@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Grouply
 
-## Getting Started
+Ứng dụng quản lý dự án nhóm cho sinh viên, tích hợp AI assistant hiểu ngữ cảnh dự án — lên kế hoạch, phân công, theo dõi tiến độ qua hội thoại tự nhiên.
 
-First, run the development server:
+## Tính năng
+
+- **Workspace đa chế độ** — xem tasks theo danh sách, graph phụ thuộc, timeline Gantt, và tài liệu
+- **AI assistant** — chat với Claude hoặc Groq Llama để tạo task, phân công, tìm kiếm tài liệu, đọc tiến độ
+- **RAG trên tài liệu nhóm** — upload đề bài, rubric, tài liệu tham khảo; AI tìm kiếm semantic khi trả lời
+- **Real-time sync** — cập nhật tasks và sections tức thì qua Supabase subscriptions
+- **Checklist deliverables** — liên kết tasks với các mục bàn giao; theo dõi % hoàn thành
+- **Dependency graph** — visualize task blocking với React Flow
+- **Phân quyền owner/member** — owner có toàn quyền, member không xóa được task của người khác
+- **Simulate mode** — xem trước tool calls của AI trước khi áp dụng
+- **BYOK** — dùng API key riêng của nhóm cho Anthropic hoặc Groq
+
+## Tech Stack
+
+| Layer | Công nghệ |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| UI | React 19, Tailwind CSS, shadcn/ui, Lucide |
+| AI | Vercel AI SDK, Claude Sonnet 4, Groq Llama 3.3 70B |
+| Database | Supabase (PostgreSQL, pgvector, Auth, Storage) |
+| Graph | React Flow (@xyflow/react), dagre layout |
+| State | Zustand |
+| Embedding | @xenova/transformers (local, browser-side) |
+
+## Cài đặt
+
+### Yêu cầu
+
+- Node.js 20+
+- Tài khoản Supabase
+- API key Anthropic hoặc Groq (hoặc cả hai)
+
+### Bước 1 — Clone và cài dependencies
+
+```bash
+git clone <repo-url>
+cd grouply
+npm install
+```
+
+### Bước 2 — Tạo Supabase project
+
+1. Tạo project mới tại [supabase.com](https://supabase.com)
+2. Vào **Settings → Database → Extensions**, bật `vector`
+3. Chạy migration theo thứ tự trong `supabase/migrations/`:
+
+```bash
+# Chạy trong Supabase SQL Editor hoặc psql
+001_init.sql
+002_project_documents.sql
+003_document_chunks.sql
+004_rag_v2.sql
+```
+
+### Bước 3 — Cấu hình environment
+
+```bash
+cp .env.local.example .env.local
+```
+
+Điền vào `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=      # Project URL trong Supabase dashboard
+NEXT_PUBLIC_SUPABASE_ANON_KEY= # anon/public key
+SUPABASE_SERVICE_ROLE_KEY=     # service_role key (chỉ dùng server-side)
+ANTHROPIC_API_KEY=             # sk-ant-... (tùy chọn nếu dùng Groq)
+GROQ_API_KEY=                  # gsk_... (tùy chọn nếu dùng Anthropic)
+ENCRYPTION_SECRET=             # chuỗi ngẫu nhiên 32 ký tự để mã hóa BYOK keys
+```
+
+### Bước 4 — Chạy
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cấu trúc dự án
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  (auth)/login|register/     # Trang đăng nhập / đăng ký
+  dashboard/                 # Danh sách projects
+  project/[id]/              # Workspace của project
+  api/ai/chat/               # Streaming AI endpoint
+  api/project/               # CRUD project, upload/delete docs
 
-## Learn More
+components/
+  workspace/                 # WorkspaceData (data) + WorkspaceLayout (UI)
+  chat/                      # ChatPanel, ChatMessages, ChatInput, SimulateModal
+  task/ graph/ timeline/     # Task list, dependency graph, Gantt
+  checklist/ documents/      # Sidebar deliverables, tab tài liệu
+  contribution/              # Contribution bar theo thành viên
 
-To learn more about Next.js, take a look at the following resources:
+lib/
+  ai/
+    constants.ts             # Hằng số dùng chung (WRITE_TOOLS, chunk sizes...)
+    tools/                   # Tool handlers theo domain (task, section, search...)
+    prompts.ts               # System prompt builder
+    retrieval.ts             # Vector + hybrid search
+    chunker.ts               # Chia văn bản thành chunks
+    simulate.ts              # Simulate mode (không gọi API thật)
+  chat/
+    messageUtils.ts          # getMessageText, isWriteToolCall
+  supabase/                  # client + server Supabase helpers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+types/
+  index.ts                   # Types chính, RetrievedChunk discriminated union
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+stores/
+  chatStore.ts               # Zustand: pending tool calls, simulate state
+  graphStore.ts              # Zustand: graph layout state
+```
 
-## Deploy on Vercel
+## AI Tools
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+AI có thể gọi các tools sau trong một lượt chat:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Tool | Mô tả |
+|---|---|
+| `read_project` | Đọc toàn bộ state: tasks, members, sections, checklist |
+| `read_task` | Chi tiết một task |
+| `read_member_load` | Workload từng thành viên |
+| `read_tasks_by_section` | Tasks theo section |
+| `search_documents` | Tìm kiếm semantic trong tài liệu nhóm |
+| `add_task` | Tạo task mới |
+| `update_task` | Cập nhật task |
+| `delete_task` | Xóa task (owner only) |
+| `add_section` | Tạo section mới |
+| `add_checklist_item` | Thêm deliverable vào checklist |
+| `link_task_to_item` | Gắn task với checklist item |
+| `set_dependency` | Tạo quan hệ blocking giữa tasks |
+| `remove_dependency` | Xóa dependency |
+| `assign_tasks_batch` | Phân công hàng loạt |
+
+Write tools (`add_*`, `update_*`, `delete_*`, `assign_*`, `set_*`, `remove_*`) yêu cầu user xác nhận trước khi áp dụng.
+
+## Simulate Mode
+
+Khi không muốn dùng API key thật, bật **Simulate** trong chat panel. AI sẽ dự đoán tool calls dựa trên context project mà không gọi Anthropic/Groq — hữu ích để demo hoặc test flow.
+
+## License
+
+MIT
