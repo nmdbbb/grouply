@@ -60,7 +60,7 @@ Khi đề xuất thay đổi (replan, điều chỉnh task, phân công lại):
   const base = [identity, members, checklist, toolRules, actionRules].join('\n\n')
 
   if (provider === 'groq') {
-    return base + `\n\nIMPORTANT: Respond by calling tools only. Never write a bullet-list plan or describe steps. When asked to plan/create tasks: call add_section then add_task immediately. Tool arguments must be valid JSON. Use real UUIDs from the MEMBERS list above.`
+    return base + `\n\nIMPORTANT: Always respond with a text message after calling tools. When asked to plan/create tasks: call add_section then add_task immediately, then summarize what you did. Tool arguments must be valid JSON. Use real UUIDs from the MEMBERS list above.`
   }
 
   return base
