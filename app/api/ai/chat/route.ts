@@ -103,25 +103,30 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'API key chưa được cấu hình cho provider này.' }, { status: 400 })
   }
 
-  const allWriteCalls: ToolCall[] = []
-
-  const result = streamText({
-    model,
-    system: systemPrompt,
-    messages: aiMessages as any,
-    tools,
-    stopWhen: stepCountIs(8),
-    onStepFinish: async ({ toolCalls: stepToolCalls }: { toolCalls: any[] }) => {
-      if (!stepToolCalls?.length) return
-      const writeCalls = stepToolCalls.filter((tc: any) => WRITE_TOOLS.has(tc.toolName))
-      allWriteCalls.push(...writeCalls.map((tc: any) => ({
-        id: tc.toolCallId,
-        name: tc.toolName,
-        input: tc.input as Record<string, unknown>,
-      })))
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      const result = streamText({
+        model,
+        system: systemPrompt,
+        messages: aiMessages as any,
+        tools,
+        stopWhen: stepCountIs(8),
+        onStepFinish: async ({ toolCalls: stepToolCalls }: { toolCalls: any[] }) => {
+          if (!stepToolCalls?.length) return
+          const writeCalls = stepToolCalls.filter((tc: any) => WRITE_TOOLS.has(tc.toolName))
+          if (writeCalls.length === 0) return
+          const pendingCalls: ToolCall[] = writeCalls.map((tc: any) => ({
+            id: tc.toolCallId,
+            name: tc.toolName,
+            input: tc.input as Record<string, unknown>,
+          }))
+          const preview = buildGhostPreview(pendingCalls)
+          ;(writer.write as any)({ type: 'data-write-tools', data: { tool_calls: pendingCalls, preview } })
+        },
+      })
+      writer.merge(result.toUIMessageStream())
     },
   })
 
-  // Use toUIMessageStreamResponse directly — most compatible with useChat DefaultChatTransport
-  return (result as any).toUIMessageStreamResponse()
+  return createUIMessageStreamResponse({ stream })
 }
