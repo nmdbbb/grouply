@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.79",
+    "@ai-sdk/google": "^3.0.80",
     "@ai-sdk/groq": "^3.0.39",
+    "@ai-sdk/openai": "^3.0.66",
     "@ai-sdk/react": "^3.0.193",
+    "@ai-sdk/xai": "^3.0.92",
     "@anthropic-ai/sdk": "^0.96.0",
     "@base-ui/react": "^1.4.1",
     "@hookform/resolvers": "^5.2.2",
