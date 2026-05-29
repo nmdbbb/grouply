@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const {
     project_id, messages: clientMessages = [],
     commit_tool_calls, attached_text, reply_to,
-    provider = 'anthropic',
+    provider,
   } = body
 
   // --- Commit path ---
@@ -45,8 +45,12 @@ export async function POST(req: NextRequest) {
     .from('project_members').select('role').eq('project_id', project_id).eq('user_id', user.id).single()
   if (!membership) return new Response('Forbidden', { status: 403 })
 
+  if (!provider || !(provider in PROVIDERS)) {
+    return new Response('Provider not specified or invalid', { status: 400 })
+  }
+
   const byokKeys = (profile?.byok_keys ?? {}) as Record<string, string>
-  const providerId = (provider in PROVIDERS ? provider : 'anthropic') as ProviderId
+  const providerId = provider as ProviderId
   const rawKey = byokKeys[providerId]
     ? Buffer.from(byokKeys[providerId], 'base64').toString('utf-8')
     : process.env[PROVIDERS[providerId].envKey] ?? ''
