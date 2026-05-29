@@ -89,33 +89,42 @@ export async function POST(req: NextRequest) {
 
   const tools = buildTools(project_id, user.id, supabase)
 
+  if (!rawKey) {
+    return Response.json({ error: 'API key chưa được cấu hình cho provider này.' }, { status: 400 })
+  }
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const result = streamText({
-        model,
-        system: systemPrompt,
-        messages: aiMessages as any,
-        tools,
-        stopWhen: stepCountIs(8),
-        onStepFinish: async ({ toolCalls: stepToolCalls }) => {
-          if (!stepToolCalls?.length) return
+      try {
+        const result = streamText({
+          model,
+          system: systemPrompt,
+          messages: aiMessages as any,
+          tools,
+          stopWhen: stepCountIs(8),
+          onStepFinish: async ({ toolCalls: stepToolCalls }) => {
+            if (!stepToolCalls?.length) return
 
-          const writeCalls = stepToolCalls.filter(tc => WRITE_TOOLS.has(tc.toolName))
-          if (writeCalls.length === 0) return
+            const writeCalls = stepToolCalls.filter(tc => WRITE_TOOLS.has(tc.toolName))
+            if (writeCalls.length === 0) return
 
-          const pendingCalls: ToolCall[] = writeCalls.map(tc => ({
-            id: tc.toolCallId,
-            name: tc.toolName,
-            input: tc.input as Record<string, unknown>,
-          }))
-          const preview = buildGhostPreview(pendingCalls)
+            const pendingCalls: ToolCall[] = writeCalls.map(tc => ({
+              id: tc.toolCallId,
+              name: tc.toolName,
+              input: tc.input as Record<string, unknown>,
+            }))
+            const preview = buildGhostPreview(pendingCalls)
 
-          // Send write tools to client via custom data chunk
-          ;(writer.write as any)({ type: 'data-write-tools', data: { tool_calls: pendingCalls, preview } })
-        },
-      })
+            // Send write tools to client via custom data chunk
+            ;(writer.write as any)({ type: 'data-write-tools', data: { tool_calls: pendingCalls, preview } })
+          },
+        })
 
-      writer.merge(result.toUIMessageStream())
+        writer.merge(result.toUIMessageStream())
+      } catch (err) {
+        console.error('[chat/route] streamText error:', err)
+        throw err
+      }
     },
   })
 
