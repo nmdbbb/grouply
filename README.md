@@ -5,14 +5,13 @@
 ## Tính năng
 
 - **Workspace đa chế độ** — xem tasks theo danh sách, graph phụ thuộc, timeline Gantt, và tài liệu
-- **AI assistant** — chat với Claude hoặc Groq Llama để tạo task, phân công, tìm kiếm tài liệu, đọc tiến độ
+- **AI assistant** — chat với nhiều AI providers để tạo task, phân công, tìm kiếm tài liệu, đọc tiến độ
 - **RAG trên tài liệu nhóm** — upload đề bài, rubric, tài liệu tham khảo; AI tìm kiếm semantic khi trả lời
 - **Real-time sync** — cập nhật tasks và sections tức thì qua Supabase subscriptions
 - **Checklist deliverables** — liên kết tasks với các mục bàn giao; theo dõi % hoàn thành
 - **Dependency graph** — visualize task blocking với React Flow
 - **Phân quyền owner/member** — owner có toàn quyền, member không xóa được task của người khác
-- **Simulate mode** — xem trước tool calls của AI trước khi áp dụng
-- **BYOK** — dùng API key riêng của nhóm cho Anthropic hoặc Groq
+- **BYOK** — dùng API key riêng của nhóm cho các AI provider
 
 ## Tech Stack
 
@@ -20,7 +19,7 @@
 |---|---|
 | Framework | Next.js 16 (App Router, Turbopack) |
 | UI | React 19, Tailwind CSS, shadcn/ui, Lucide |
-| AI | Vercel AI SDK, Claude Sonnet 4, Groq Llama 3.3 70B |
+| AI | Vercel AI SDK, hỗ trợ nhiều AI providers |
 | Database | Supabase (PostgreSQL, pgvector, Auth, Storage) |
 | Graph | React Flow (@xyflow/react), dagre layout |
 | State | Zustand |
@@ -32,7 +31,7 @@
 
 - Node.js 20+
 - Tài khoản Supabase
-- API key Anthropic hoặc Groq (hoặc cả hai)
+- API key của AI provider bạn muốn dùng
 
 ### Bước 1 — Clone và cài dependencies
 
@@ -68,8 +67,8 @@ cp .env.local.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=      # Project URL trong Supabase dashboard
 NEXT_PUBLIC_SUPABASE_ANON_KEY= # anon/public key
 SUPABASE_SERVICE_ROLE_KEY=     # service_role key (chỉ dùng server-side)
-ANTHROPIC_API_KEY=             # sk-ant-... (tùy chọn nếu dùng Groq)
-GROQ_API_KEY=                  # gsk_... (tùy chọn nếu dùng Anthropic)
+ANTHROPIC_API_KEY=             # API key cho AI provider (tùy chọn)
+GROQ_API_KEY=                  # API key cho AI provider (tùy chọn)
 ENCRYPTION_SECRET=             # chuỗi ngẫu nhiên 32 ký tự để mã hóa BYOK keys
 ```
 
@@ -93,7 +92,7 @@ app/
 
 components/
   workspace/                 # WorkspaceData (data) + WorkspaceLayout (UI)
-  chat/                      # ChatPanel, ChatMessages, ChatInput, SimulateModal
+  chat/                      # ChatPanel, ChatMessages, ChatInput
   task/ graph/ timeline/     # Task list, dependency graph, Gantt
   checklist/ documents/      # Sidebar deliverables, tab tài liệu
   contribution/              # Contribution bar theo thành viên
@@ -105,7 +104,6 @@ lib/
     prompts.ts               # System prompt builder
     retrieval.ts             # Vector + hybrid search
     chunker.ts               # Chia văn bản thành chunks
-    simulate.ts              # Simulate mode (không gọi API thật)
   chat/
     messageUtils.ts          # getMessageText, isWriteToolCall
   supabase/                  # client + server Supabase helpers
@@ -114,7 +112,7 @@ types/
   index.ts                   # Types chính, RetrievedChunk discriminated union
 
 stores/
-  chatStore.ts               # Zustand: pending tool calls, simulate state
+  chatStore.ts               # Zustand: pending tool calls, chat state
   graphStore.ts              # Zustand: graph layout state
 ```
 
@@ -140,10 +138,6 @@ AI có thể gọi các tools sau trong một lượt chat:
 | `assign_tasks_batch` | Phân công hàng loạt |
 
 Write tools (`add_*`, `update_*`, `delete_*`, `assign_*`, `set_*`, `remove_*`) yêu cầu user xác nhận trước khi áp dụng.
-
-## Simulate Mode
-
-Khi không muốn dùng API key thật, bật **Simulate** trong chat panel. AI sẽ dự đoán tool calls dựa trên context project mà không gọi Anthropic/Groq — hữu ích để demo hoặc test flow.
 
 ## License
 
