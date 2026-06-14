@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import {
   ReactFlow, Background, MiniMap, Controls,
   type Connection, type NodeMouseHandler,
@@ -42,6 +42,9 @@ export function TaskGraph({
   const { nodes, edges, ghostNodes, ghostEdges, onNodesChange, onEdgesChange, buildFromData, removeTaskNode } = useGraphStore()
   const membersRef = useRef(members)
   membersRef.current = members
+
+  const [quickAdd, setQuickAdd] = useState<{ x: number; y: number; sectionId: string | null } | null>(null)
+  const [quickAddName, setQuickAddName] = useState('')
 
   const reload = useCallback(async () => {
     const [{ data: tasks }, { data: sections }] = await Promise.all([
@@ -97,30 +100,34 @@ export function TaskGraph({
     reload()
   }, [edges, supabase, reload])
 
-  const handlePaneDoubleClick = useCallback(async (event: React.MouseEvent) => {
+  const handlePaneDoubleClick = useCallback((event: React.MouseEvent) => {
     const target = event.target as HTMLElement
     const sectionEl = target.closest('[data-id^="section-"]')
     const sectionId = sectionEl ? sectionEl.getAttribute('data-id')?.replace('section-', '') : null
+    setQuickAdd({ x: event.clientX, y: event.clientY, sectionId: sectionId ?? null })
+    setQuickAddName('')
+  }, [])
 
-    const name = prompt('Tên task:')
-    if (!name?.trim()) return
-
+  const submitQuickAdd = useCallback(async () => {
+    if (!quickAdd || !quickAddName.trim()) { setQuickAdd(null); return }
     await supabase.from('tasks').insert({
       project_id: projectId,
-      section_id: sectionId,
-      name: name.trim(),
+      section_id: quickAdd.sectionId,
+      name: quickAddName.trim(),
       created_by: userId,
       pos_x: 50,
       pos_y: 50,
     })
+    setQuickAdd(null)
+    setQuickAddName('')
     reload()
-  }, [projectId, userId, supabase, reload])
+  }, [quickAdd, quickAddName, projectId, userId, supabase, reload])
 
   const allNodes = [...nodes, ...ghostNodes]
   const allEdges = [...edges, ...ghostEdges]
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative" onClick={() => quickAdd && setQuickAdd(null)}>
       <ReactFlow
         nodes={allNodes}
         edges={allEdges}
@@ -139,6 +146,24 @@ export function TaskGraph({
         <Controls position="bottom-left" />
         <GraphToolbar onToggleView={onToggleView} currentView={currentView} />
       </ReactFlow>
+
+      {quickAdd && (
+        <div
+          className="absolute z-50 bg-white border rounded-lg shadow-lg p-2 flex gap-1"
+          style={{ left: quickAdd.x, top: quickAdd.y }}
+          onClick={e => e.stopPropagation()}
+        >
+          <input
+            autoFocus
+            value={quickAddName}
+            onChange={e => setQuickAddName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitQuickAdd(); if (e.key === 'Escape') setQuickAdd(null) }}
+            placeholder="Tên task..."
+            className="text-sm border rounded px-2 py-1 w-44 outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <button onClick={submitQuickAdd} className="text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700">+</button>
+        </div>
+      )}
     </div>
   )
 }

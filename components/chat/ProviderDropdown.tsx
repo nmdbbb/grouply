@@ -3,13 +3,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { PROVIDERS } from '@/lib/ai/providers'
 import type { ProviderId } from '@/lib/ai/providers'
+import type { ChatMode } from '@/stores/chatStore'
 
 interface Props {
   provider: ProviderId | null
+  mode: ChatMode
   onSelect: (p: ProviderId) => void
+  onSetMode: (m: ChatMode) => void
 }
 
-export function ProviderDropdown({ provider, onSelect }: Props) {
+export function ProviderDropdown({ provider, mode, onSelect, onSetMode }: Props) {
   const [open, setOpen] = useState(false)
   const [keyInput, setKeyInput] = useState('')
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({})
@@ -39,6 +42,7 @@ export function ProviderDropdown({ provider, onSelect }: Props) {
 
   function handleSelectProvider(id: ProviderId) {
     if (savedKeys[id]) {
+      onSetMode('api')
       onSelect(id)
       setOpen(false)
     } else {
@@ -46,6 +50,11 @@ export function ProviderDropdown({ provider, onSelect }: Props) {
       setKeyInput('')
       setError('')
     }
+  }
+
+  function handleSelectSimulate() {
+    onSetMode('simulate')
+    setOpen(false)
   }
 
   async function handleSaveKey() {
@@ -66,7 +75,7 @@ export function ProviderDropdown({ provider, onSelect }: Props) {
     setOpen(false)
   }
 
-  const activeLabel = provider ? PROVIDERS[provider].label : 'Chọn AI'
+  const activeLabel = mode === 'simulate' ? 'Simulate' : provider ? PROVIDERS[provider].label : 'Chọn AI'
 
   return (
     <div className="relative" ref={ref}>
@@ -118,13 +127,21 @@ export function ProviderDropdown({ provider, onSelect }: Props) {
                   onClick={() => handleSelectProvider(id)}
                   className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-50"
                 >
-                  <span className={provider === id ? 'font-semibold' : ''}>{cfg.label}</span>
+                  <span className={provider === id && mode === 'api' ? 'font-semibold' : ''}>{cfg.label}</span>
                   {savedKeys[id]
                     ? <span className="text-green-600 text-[10px]">●  key đã lưu</span>
                     : <span className="text-muted-foreground text-[10px]">nhập key</span>
                   }
                 </button>
               ))}
+              <div className="border-t my-1" />
+              <button
+                onClick={handleSelectSimulate}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-50"
+              >
+                <span className={mode === 'simulate' ? 'font-semibold' : ''}>Simulate</span>
+                <span className="text-muted-foreground text-[10px]">không cần API key</span>
+              </button>
             </div>
           )}
         </div>

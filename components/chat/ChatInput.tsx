@@ -6,9 +6,11 @@ import { FileAttachButton } from './FileAttachButton'
 import { ReplyBar } from './ReplyBar'
 import { ProviderDropdown } from './ProviderDropdown'
 import type { ProviderId } from '@/lib/ai/providers'
+import type { ChatMode } from '@/stores/chatStore'
 
 interface Props {
   input: string
+  mode: ChatMode
   provider: ProviderId | null
   isLoading: boolean
   replyTo: any | null
@@ -16,24 +18,31 @@ interface Props {
   onInputChange: (val: string) => void
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   onSend: () => void
+  onSimulateClick: () => void
   onClearReply: () => void
   onClearFile: () => void
   onSetFile: (file: { name: string; text: string }) => void
   onSetProvider: (p: ProviderId) => void
+  onSetMode: (m: ChatMode) => void
 }
 
 export function ChatInput({
-  input, provider, isLoading,
+  input, mode, provider, isLoading,
   replyTo, attachedFile,
-  onInputChange, onKeyDown, onSend,
-  onClearReply, onClearFile, onSetFile, onSetProvider,
+  onInputChange, onKeyDown, onSend, onSimulateClick,
+  onClearReply, onClearFile, onSetFile, onSetProvider, onSetMode,
 }: Props) {
+  const isSimulate = mode === 'simulate'
+  // In API mode a provider is required; in Simulate mode the user pastes a Claude.ai
+  // response so no provider/key is needed.
+  const sendDisabled = isLoading || !input.trim() || (!isSimulate && !provider)
+
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
-        <span className="text-sm font-medium">AI Chat</span>
-        <ProviderDropdown provider={provider} onSelect={onSetProvider} />
+      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 gap-2">
+        <span className="text-sm font-medium shrink-0">AI Chat</span>
+        <ProviderDropdown provider={provider} mode={mode} onSelect={onSetProvider} onSetMode={onSetMode} />
       </div>
 
       {/* Reply and file banners */}
@@ -53,20 +62,22 @@ export function ChatInput({
             value={input}
             onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Nhập tin nhắn... (Enter để gửi)"
+            placeholder={isSimulate ? 'Nhập tin nhắn... (Enter để tạo prompt)' : 'Nhập tin nhắn... (Enter để gửi)'}
             className="resize-none text-sm flex-1"
             rows={2}
           />
           <Button
             size="sm"
-            onClick={onSend}
-            disabled={isLoading || !input.trim() || !provider}
+            onClick={isSimulate ? onSimulateClick : onSend}
+            disabled={sendDisabled}
             className="self-end shrink-0"
-          >Gửi</Button>
+          >{isSimulate ? 'Tạo prompt' : 'Gửi'}</Button>
         </div>
-        {!provider && (
+        {isSimulate ? (
+          <p className="text-xs text-muted-foreground mt-1.5 text-center">Simulate: copy prompt sang Claude.ai, dán response về — không cần API key.</p>
+        ) : !provider ? (
           <p className="text-xs text-muted-foreground mt-1.5 text-center">Chọn AI provider để bắt đầu</p>
-        )}
+        ) : null}
       </div>
     </>
   )

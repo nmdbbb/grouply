@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
+import { toast } from 'sonner'
 import { useChatStore } from '@/stores/chatStore'
 import { useGraphStore } from '@/stores/graphStore'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
+import { SimulateModal } from './SimulateModal'
 import { buildGhostNodesFromToolCalls } from '@/lib/ai/ghostBuilder'
+import { buildSimulatePrompt } from '@/lib/ai/simulate'
+import { getMessageText } from '@/lib/chat/messageUtils'
 import type { ProjectContext } from '@/lib/ai/context'
 import type { ToolCall, GhostPreview } from '@/stores/chatStore'
 
@@ -22,11 +26,13 @@ interface Props {
 
 export function ChatPanel({ projectId, context, currentUserName, currentUserRole, userId, onAfterCommit }: Props) {
   const [input, setInput] = useState('')
+  const [showSimulate, setShowSimulate] = useState(false)
+  const [simulatePrompt, setSimulatePrompt] = useState('')
 
   const {
-    pendingToolCalls, ghostPreview, provider,
+    pendingToolCalls, ghostPreview, mode, provider,
     replyTo, attachedFile,
-    setPending, clearPending, setProvider, setReplyTo, setAttachedFile,
+    setPending, clearPending, setMode, setProvider, setReplyTo, setAttachedFile,
   } = useChatStore()
   const { setGhostPreview, clearGhost } = useGraphStore()
 
@@ -36,7 +42,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       body: { project_id: projectId },
     }),
     onData: (dataPart: any) => {
-      if (dataPart?.name === 'write-tools' && dataPart?.data) {
+      if (dataPart?.type === 'data-write-tools' && dataPart?.data) {
         const { tool_calls, preview } = dataPart.data as { tool_calls: ToolCall[]; preview: GhostPreview }
         setPending(tool_calls, preview)
         const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(tool_calls, context)
@@ -44,6 +50,10 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       }
     },
     onFinish: () => { setReplyTo(null); setAttachedFile(null) },
+    onError: (err) => {
+      console.error('[chat] error:', err)
+      toast.error(err.message || 'Không gửi được tin nhắn. Kiểm tra provider và API key.')
+    },
   })
 
   const isLoading = status === 'submitted' || status === 'streaming'
@@ -56,16 +66,33 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
     setInput('')
   }
 
+  function openSimulate() {
+    if (!input.trim()) return
+    const history = messages.map(m => ({ role: m.role as 'user' | 'assistant', content: getMessageText(m) }))
+    setSimulatePrompt(buildSimulatePrompt(context, history, input, currentUserName, currentUserRole, userId))
+    setShowSimulate(true)
+    setInput('')
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key !== 'Enter' || e.shiftKey) return
     e.preventDefault()
-    submitMessage()
+    if (mode === 'simulate') openSimulate()
+    else submitMessage()
+  }
+
+  function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview) {
+    if (toolCalls.length === 0) return
+    setPending(toolCalls, preview)
+    const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(toolCalls, context)
+    setGhostPreview(ghostNodes, ghostEdges)
   }
 
   return (
     <div className="flex flex-col h-full border-l bg-white">
       <ChatInput
         input={input}
+        mode={mode}
         provider={provider}
         isLoading={isLoading}
         replyTo={replyTo}
@@ -73,10 +100,12 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
         onInputChange={setInput}
         onKeyDown={handleKeyDown}
         onSend={submitMessage}
+        onSimulateClick={openSimulate}
         onClearReply={() => setReplyTo(null)}
         onClearFile={() => setAttachedFile(null)}
         onSetFile={setAttachedFile}
         onSetProvider={setProvider}
+        onSetMode={setMode}
       />
       <ChatMessages
         messages={messages}
@@ -87,6 +116,12 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
         onSetReplyTo={setReplyTo}
         onCommit={() => { clearPending(); clearGhost(); onAfterCommit?.() }}
         onDiscard={() => { clearPending(); clearGhost() }}
+      />
+      <SimulateModal
+        open={showSimulate}
+        prompt={simulatePrompt}
+        onClose={() => setShowSimulate(false)}
+        onParsed={handleSimulateParsed}
       />
     </div>
   )

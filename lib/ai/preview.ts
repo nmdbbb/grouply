@@ -3,7 +3,7 @@ import type { ToolCall, GhostPreview } from '@/stores/chatStore'
 export function buildGhostPreview(toolCalls: ToolCall[]): GhostPreview {
   const changes = toolCalls.map(tc => {
     switch (tc.name) {
-      case 'add_task': return `Thêm task: "${tc.input.name ?? tc.input.title}"`
+      case 'add_task': return `Thêm task: "${(tc.input.name ?? tc.input.title) || '(Không tên)'}"`
       case 'update_task': {
         const fields = tc.input.fields as Record<string, unknown>
         return `Cập nhật task (${Object.keys(fields).join(', ')})`

@@ -108,9 +108,59 @@ export async function POST(req: NextRequest) {
   }
 
   const stream = createUIMessageStream({
+    onError: (error) => {
+      const err = error as any
+      // Provider errors (e.g. Groq APICallError) carry `failed_generation` — the raw
+      // model output that failed tool-call validation. It may live on responseBody,
+      // data, cause, or only inside the stringified error. Search exhaustively.
+      const candidates = [
+        err?.responseBody, err?.data, err?.cause?.responseBody, err?.cause?.data,
+        err?.responseBody ?? err?.message,
+      ].filter(Boolean)
+      let dump = ''
+      try { dump = JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})) } catch { dump = String(err) }
+      console.error('[chat] stream error FULL:', dump)
+      console.error('[chat] stream error name:', err?.name, '| message:', err?.message)
+      // Persist full error to a file so it can be inspected without scrolling the terminal.
+      try {
+        const fsmod = require('node:fs') as typeof import('node:fs')
+        fsmod.mkdirSync('.cache', { recursive: true })
+        fsmod.writeFileSync('.cache/groq-error.json', JSON.stringify({
+          at: new Date().toISOString(),
+          name: err?.name, message: err?.message,
+          responseBody: err?.responseBody, data: err?.data,
+          cause: err?.cause ? JSON.stringify(err.cause, Object.getOwnPropertyNames(err.cause)) : undefined,
+          full: dump,
+          messagesSent: aiMessages,
+        }, null, 2))
+      } catch (e) { console.error('[chat] could not write error file:', e) }
+
+      const extractFailed = (raw: unknown): string | null => {
+        if (!raw) return null
+        const tryParse = (s: string) => { try { return JSON.parse(s) } catch { return null } }
+        const obj = typeof raw === 'string' ? tryParse(raw) : raw
+        const fg = (obj as any)?.error?.failed_generation ?? (obj as any)?.failed_generation
+        if (fg) return typeof fg === 'string' ? fg : JSON.stringify(fg)
+        return null
+      }
+      for (const c of [...candidates, dump]) {
+        const fg = extractFailed(c)
+        if (fg) return `Groq sinh tool-call hỏng. failed_generation:\n${fg}`
+        // last resort: regex out of the stringified dump
+        if (typeof c === 'string') {
+          const m = c.match(/"failed_generation"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+          if (m) return `Groq sinh tool-call hỏng. failed_generation:\n${m[1]}`
+        }
+      }
+      return err instanceof Error ? err.message : String(err)
+    },
     execute: async ({ writer }) => {
       const result = streamText({
         model,
+        // Low temperature keeps tool-call JSON valid. Groq llama-3.3 intermittently
+        // emits malformed tool calls at its default temperature → `tool_use_failed`
+        // (invalid_request_error) which aborts the whole stream. See repro in git history.
+        temperature: 0,
         system: systemPrompt,
         messages: aiMessages as any,
         tools,

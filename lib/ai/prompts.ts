@@ -17,7 +17,13 @@ Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm na
     : context.members.map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' [nhóm trưởng]' : ''}`).join('\n')
   const members = `THÀNH VIÊN:\n${memberLines}\nNGƯỜI DÙNG: ${currentUserName} (id: ${currentUserId}, vai trò: ${currentUserRole})`
 
-  // [3] CHECKLIST
+  // [3] SECTIONS
+  const sectionLines = context.sections.length === 0
+    ? '(Chưa có section)'
+    : context.sections.map(s => `- ${s.name} (section_id: ${s.id})`).join('\n')
+  const sections = `SECTIONS HIỆN TẠI:\n${sectionLines}\n→ Khi add_task vào section đã có: dùng section_id (UUID). Khi tạo section mới: dùng add_section trước, sau đó add_task với field "section" = tên section mới.`
+
+  // [4] CHECKLIST
   const checklistLines = context.checklistSummary.length === 0
     ? 'Chưa có checklist item.'
     : context.checklistSummary.map(ci => {
@@ -27,7 +33,7 @@ Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm na
       }).join('\n')
   const checklist = `CHECKLIST:\n${checklistLines}`
 
-  // [4] TOOL RULES
+  // [5] TOOL RULES
   const toolRules = `TOOL RULES — GỌI TOOL TRƯỚC KHI TRẢ LỜI:
 - Câu hỏi về đề bài / yêu cầu / tiêu chí: gọi search_documents trước.
 - Câu hỏi về tasks / tiến độ: gọi read_project hoặc read_tasks_by_section.
@@ -46,7 +52,7 @@ Khi đề xuất thay đổi (replan, điều chỉnh task, phân công lại):
 3. Đề xuất dựa trên cả hai nguồn
 4. Nếu có precedent từ activity_log, cite: "Trước đây nhóm đã..."`
 
-  // [5] ACTION RULES
+  // [6] ACTION RULES
   const assignmentRules = currentUserRole === 'owner'
     ? `Phân công: dùng assign_tasks_batch, gọi read_member_load trước. Được giao cho bất kỳ ai.`
     : `Phân công: chỉ được assign cho CHÍNH MÌNH (assignee_id = "${currentUserId}"). Không giao cho người khác.`
@@ -57,7 +63,7 @@ Khi đề xuất thay đổi (replan, điều chỉnh task, phân công lại):
 - delete_task: chỉ nhóm trưởng. update_task: nhóm trưởng hoặc người được assign.
 - ${assignmentRules}`
 
-  const base = [identity, members, checklist, toolRules, actionRules].join('\n\n')
+  const base = [identity, members, sections, checklist, toolRules, actionRules].join('\n\n')
 
   if (provider === 'groq') {
     return base + `\n\nIMPORTANT: Always respond with a text message after calling tools. When asked to plan/create tasks: call add_section then add_task immediately, then summarize what you did. Tool arguments must be valid JSON. Use real UUIDs from the MEMBERS list above.`

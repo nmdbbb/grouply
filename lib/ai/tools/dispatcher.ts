@@ -44,23 +44,42 @@ export async function executeToolCalls(
   userId: string,
   supabase: any
 ): Promise<ToolResult[]> {
+  // add_section must run before add_task so the new section ID is available
+  const sorted = [
+    ...toolCalls.filter(tc => tc.name === 'add_section'),
+    ...toolCalls.filter(tc => tc.name !== 'add_section'),
+  ]
+
   const sectionNameToId: Record<string, string> = {}
   const results: ToolResult[] = []
 
-  for (let tc of toolCalls) {
-    if (tc.name === 'add_task' && !tc.input.section_id && tc.input.section) {
-      const sectionName = tc.input.section as string
-      if (sectionNameToId[sectionName]) {
-        tc = { ...tc, input: { ...tc.input, section_id: sectionNameToId[sectionName] } }
+  for (let tc of sorted) {
+    if (tc.name === 'add_task') {
+      console.log('[dispatcher] add_task input:', JSON.stringify(tc.input))
+      if (!tc.input.section_id && tc.input.section) {
+        const sectionName = (tc.input.section as string).toLowerCase()
+        // Exact match first, then fuzzy
+        const resolvedId = sectionNameToId[tc.input.section as string]
+          ?? Object.entries(sectionNameToId).find(([k]) =>
+            k.toLowerCase() === sectionName ||
+            k.toLowerCase().includes(sectionName) ||
+            sectionName.includes(k.toLowerCase())
+          )?.[1]
+        if (resolvedId) {
+          tc = { ...tc, input: { ...tc.input, section_id: resolvedId } }
+          console.log('[dispatcher] patched section_id from batch:', resolvedId)
+        }
       }
     }
 
     const result = await executeToolCall(tc, projectId, userId, supabase)
+    console.log('[dispatcher]', tc.name, '→ result:', JSON.stringify(result).slice(0, 200))
 
     if (tc.name === 'add_section' && result.result) {
       const sec = result.result as any
       if (sec?.id && tc.input.name) {
         sectionNameToId[tc.input.name as string] = sec.id
+        console.log('[dispatcher] saved sectionNameToId:', tc.input.name, '→', sec.id)
       }
     }
 
