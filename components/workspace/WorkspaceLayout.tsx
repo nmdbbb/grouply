@@ -77,34 +77,49 @@ export function WorkspaceLayout({
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <header className="bg-white border-b px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="font-bold">Grouply</span>
-          <span className="text-muted-foreground">/</span>
-          <span className="font-medium">{project.name}</span>
-          {project.subject && <span className="text-sm text-muted-foreground">{project.subject}</span>}
+      <header className="bg-white border-b px-5 py-2.5 flex items-center justify-between shrink-0 shadow-[0_1px_0_0_#E5E7EB]">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="text-sm font-bold tracking-tight"
+            style={{ color: '#5B5BD6' }}
+          >
+            Grouply
+          </span>
+          <span className="text-border text-sm">/</span>
+          <span className="text-sm font-semibold text-gray-800">{project.name}</span>
+          {project.subject && (
+            <span className="hidden sm:inline text-xs text-muted-foreground border rounded-full px-2 py-0.5 bg-muted/50">
+              {project.subject}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center border rounded-lg overflow-hidden text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center bg-muted rounded-lg p-0.5 text-xs">
             {(['graph', 'list', 'timeline', 'docs'] as const).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1.5 font-medium transition-colors ${view === v ? 'bg-gray-900 text-white' : 'text-muted-foreground hover:bg-gray-50'}`}
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  view === v
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-muted-foreground hover:text-gray-700'
+                }`}
               >
-                {v === 'graph' ? '🗺 Graph' : v === 'list' ? '☰ List' : v === 'timeline' ? '📅 Timeline' : '📁 Tài liệu'}
+                {v === 'graph' ? 'Graph' : v === 'list' ? 'List' : v === 'timeline' ? 'Timeline' : 'Tài liệu'}
               </button>
             ))}
           </div>
-          <span className="text-sm text-muted-foreground">Deadline: {formatDeadline(project.deadline)}</span>
+          <span className="text-xs text-muted-foreground hidden md:inline">
+            Deadline: <span className="font-medium text-gray-700">{formatDeadline(project.deadline)}</span>
+          </span>
           {userRole === 'owner' && <InviteButton projectId={project.id} />}
           {mounted && userRole === 'owner' && (
             <button
               onClick={handleDeleteProject}
               disabled={deleting}
-              className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+              className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-md transition-colors disabled:opacity-50"
             >
-              {deleting ? 'Đang xóa...' : 'Xóa project'}
+              {deleting ? 'Đang xóa...' : 'Xóa'}
             </button>
           )}
         </div>

@@ -5,19 +5,21 @@ export async function resolveSectionId(
   supabase: any
 ): Promise<string | null> {
   if (sectionIdOrNull) {
-    console.log('[sectionResolver] using section_id directly:', sectionIdOrNull)
-    return sectionIdOrNull
+    // Validate the section actually belongs to this project (prevent cross-project injection)
+    const { data } = await supabase
+      .from('sections')
+      .select('id')
+      .eq('id', sectionIdOrNull)
+      .eq('project_id', projectId)
+      .single()
+    return data?.id ?? null
   }
-  if (!sectionName) {
-    console.log('[sectionResolver] no section_id or section name → null')
-    return null
-  }
-  const { data, error } = await supabase
+  if (!sectionName) return null
+  const { data } = await supabase
     .from('sections')
-    .select('id, name')
+    .select('id')
     .eq('project_id', projectId)
     .ilike('name', `%${sectionName}%`)
     .limit(1)
-  console.log('[sectionResolver] lookup "%s" → data=%s error=%s', sectionName, JSON.stringify(data), JSON.stringify(error))
   return data?.[0]?.id ?? null
 }

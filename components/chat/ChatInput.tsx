@@ -40,8 +40,18 @@ export function ChatInput({
   return (
     <>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 gap-2">
-        <span className="text-sm font-medium shrink-0">AI Chat</span>
+      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 gap-2 bg-white">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: isSimulate ? '#5B5BD6' : provider ? '#22c55e' : '#D1D5DB',
+            }}
+          />
+          <span className="text-xs font-medium text-muted-foreground select-none">
+            {isSimulate ? 'Simulate' : provider ? 'AI Chat' : 'Chưa kết nối'}
+          </span>
+        </div>
         <ProviderDropdown provider={provider} mode={mode} onSelect={onSetProvider} onSetMode={onSetMode} />
       </div>
 

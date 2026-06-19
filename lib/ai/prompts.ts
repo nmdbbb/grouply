@@ -17,10 +17,11 @@ Môn: ${context.subject || 'Không có'}. Deadline: ${context.deadline}. Hôm na
     : context.members.map(m => `- ${m.name} (id: ${m.id})${m.role === 'owner' ? ' [nhóm trưởng]' : ''}`).join('\n')
   const members = `THÀNH VIÊN:\n${memberLines}\nNGƯỜI DÙNG: ${currentUserName} (id: ${currentUserId}, vai trò: ${currentUserRole})`
 
-  // [3] SECTIONS
+  // [3] SECTIONS — strip newlines from user-controlled names to prevent prompt injection
+  const sanitize = (s: string) => s.replace(/[\r\n]/g, ' ').slice(0, 80)
   const sectionLines = context.sections.length === 0
     ? '(Chưa có section)'
-    : context.sections.map(s => `- ${s.name} (section_id: ${s.id})`).join('\n')
+    : context.sections.map(s => `- ${sanitize(s.name)} (section_id: ${s.id})`).join('\n')
   const sections = `SECTIONS HIỆN TẠI:\n${sectionLines}\n→ Khi add_task vào section đã có: dùng section_id (UUID). Khi tạo section mới: dùng add_section trước, sau đó add_task với field "section" = tên section mới.`
 
   // [4] CHECKLIST

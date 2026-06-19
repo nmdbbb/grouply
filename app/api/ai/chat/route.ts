@@ -24,6 +24,11 @@ export async function POST(req: NextRequest) {
 
   // --- Commit path ---
   if (commit_tool_calls && Array.isArray(commit_tool_calls)) {
+    if (!project_id) return new Response('project_id required', { status: 400 })
+    const { data: commitMembership } = await supabase
+      .from('project_members').select('role').eq('project_id', project_id).eq('user_id', user.id).single()
+    if (!commitMembership) return new Response('Forbidden', { status: 403 })
+
     const toolCalls = commit_tool_calls as ToolCall[]
     const results = await executeToolCalls(toolCalls, project_id, user.id, supabase)
 
@@ -40,6 +45,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ executed: true, results })
   }
 
+  if (!project_id) return new Response('project_id required', { status: 400 })
   const { data: profile } = await supabase.from('profiles').select('name, byok_keys').eq('id', user.id).single()
   const { data: membership } = await supabase
     .from('project_members').select('role').eq('project_id', project_id).eq('user_id', user.id).single()
@@ -54,8 +60,6 @@ export async function POST(req: NextRequest) {
   const rawKey = byokKeys[providerId]
     ? Buffer.from(byokKeys[providerId], 'base64').toString('utf-8')
     : process.env[PROVIDERS[providerId].envKey] ?? ''
-
-  console.log('[chat] provider:', providerId, 'hasKey:', Boolean(rawKey))
 
   if (!rawKey) return new Response(`No API key configured for provider: ${providerId}`, { status: 400 })
 
@@ -103,10 +107,6 @@ export async function POST(req: NextRequest) {
 
   const tools = buildTools(project_id, user.id, supabase)
 
-  if (!rawKey) {
-    return Response.json({ error: 'API key chưa được cấu hình cho provider này.' }, { status: 400 })
-  }
-
   const stream = createUIMessageStream({
     onError: (error) => {
       const err = error as any
@@ -119,21 +119,7 @@ export async function POST(req: NextRequest) {
       ].filter(Boolean)
       let dump = ''
       try { dump = JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})) } catch { dump = String(err) }
-      console.error('[chat] stream error FULL:', dump)
-      console.error('[chat] stream error name:', err?.name, '| message:', err?.message)
-      // Persist full error to a file so it can be inspected without scrolling the terminal.
-      try {
-        const fsmod = require('node:fs') as typeof import('node:fs')
-        fsmod.mkdirSync('.cache', { recursive: true })
-        fsmod.writeFileSync('.cache/groq-error.json', JSON.stringify({
-          at: new Date().toISOString(),
-          name: err?.name, message: err?.message,
-          responseBody: err?.responseBody, data: err?.data,
-          cause: err?.cause ? JSON.stringify(err.cause, Object.getOwnPropertyNames(err.cause)) : undefined,
-          full: dump,
-          messagesSent: aiMessages,
-        }, null, 2))
-      } catch (e) { console.error('[chat] could not write error file:', e) }
+      console.error('[chat] stream error:', err?.name, err?.message)
 
       const extractFailed = (raw: unknown): string | null => {
         if (!raw) return null

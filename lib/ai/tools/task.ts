@@ -15,9 +15,9 @@ export async function handleAddTask(
     supabase
   )
 
-  let posX = (input.pos_x as number) || 20
-  let posY = (input.pos_y as number) || TASK_POSITION_TOP
-  if (!input.pos_x && !input.pos_y && sectionId) {
+  let posX = input.pos_x != null ? (input.pos_x as number) : 20
+  let posY = input.pos_y != null ? (input.pos_y as number) : TASK_POSITION_TOP
+  if (input.pos_x == null && input.pos_y == null && sectionId) {
     const { count } = await supabase
       .from('tasks')
       .select('id', { count: 'exact', head: true })
@@ -25,7 +25,7 @@ export async function handleAddTask(
     posY = TASK_POSITION_TOP + (count ?? 0) * TASK_POSITION_GAP
   }
 
-  const { data } = await supabase.from('tasks').insert({
+  const { data, error } = await supabase.from('tasks').insert({
     project_id: projectId,
     section_id: sectionId,
     name: (input.name ?? input.title) as string,
@@ -40,22 +40,31 @@ export async function handleAddTask(
     created_by: userId,
   }).select().single()
 
+  if (error) return { toolName: 'add_task', result: null, error: error.message }
   return { toolName: 'add_task', result: data }
 }
 
-export async function handleUpdateTask(input: Record<string, unknown>, supabase: any): Promise<ToolResult> {
+export async function handleUpdateTask(input: Record<string, unknown>, projectId: string, supabase: any): Promise<ToolResult> {
   const fields = input.fields as Record<string, unknown>
-  const { data } = await supabase
+  // Allowlist: only these columns may be updated via AI to prevent field injection
+  const allowed = new Set(['name', 'description', 'status', 'assignee_id', 'deadline', 'section_id', 'checklist_item_id', 'blocked_by_id', 'is_optional', 'pos_x', 'pos_y'])
+  const safeFields = Object.fromEntries(Object.entries(fields).filter(([k]) => allowed.has(k)))
+  const { data, error } = await supabase
     .from('tasks')
-    .update(fields)
+    .update(safeFields)
     .eq('id', input.task_id as string)
+    .eq('project_id', projectId)
     .select()
     .single()
+  if (error) return { toolName: 'update_task', result: null, error: error.message }
   return { toolName: 'update_task', result: data }
 }
 
-export async function handleDeleteTask(input: Record<string, unknown>, supabase: any): Promise<ToolResult> {
-  await supabase.from('tasks').delete().eq('id', input.task_id as string)
+export async function handleDeleteTask(input: Record<string, unknown>, projectId: string, supabase: any): Promise<ToolResult> {
+  const { error } = await supabase.from('tasks').delete()
+    .eq('id', input.task_id as string)
+    .eq('project_id', projectId)
+  if (error) return { toolName: 'delete_task', result: null, error: error.message }
   return { toolName: 'delete_task', result: { success: true } }
 }
 

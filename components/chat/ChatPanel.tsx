@@ -8,6 +8,7 @@ import { useChatStore } from '@/stores/chatStore'
 import { useGraphStore } from '@/stores/graphStore'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
+import { ActionPreviewCard } from './ActionPreviewCard'
 import { SimulateModal } from './SimulateModal'
 import { buildGhostNodesFromToolCalls } from '@/lib/ai/ghostBuilder'
 import { buildSimulatePrompt } from '@/lib/ai/simulate'
@@ -81,7 +82,7 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
     else submitMessage()
   }
 
-  function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview) {
+  function handleSimulateParsed(toolCalls: ToolCall[], preview: GhostPreview, _responseText: string) {
     if (toolCalls.length === 0) return
     setPending(toolCalls, preview)
     const { ghostNodes, ghostEdges } = buildGhostNodesFromToolCalls(toolCalls, context)
@@ -110,13 +111,20 @@ export function ChatPanel({ projectId, context, currentUserName, currentUserRole
       <ChatMessages
         messages={messages}
         isLoading={isLoading}
-        ghostPreview={ghostPreview}
-        pendingToolCalls={pendingToolCalls}
         projectId={projectId}
         onSetReplyTo={setReplyTo}
-        onCommit={() => { clearPending(); clearGhost(); onAfterCommit?.() }}
-        onDiscard={() => { clearPending(); clearGhost() }}
       />
+      {ghostPreview && pendingToolCalls.length > 0 && (
+        <div className="px-3 pb-2 shrink-0">
+          <ActionPreviewCard
+            preview={ghostPreview}
+            toolCalls={pendingToolCalls}
+            projectId={projectId}
+            onCommit={() => { clearPending(); clearGhost(); onAfterCommit?.() }}
+            onDiscard={() => { clearPending(); clearGhost() }}
+          />
+        </div>
+      )}
       <SimulateModal
         open={showSimulate}
         prompt={simulatePrompt}

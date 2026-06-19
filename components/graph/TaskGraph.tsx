@@ -38,10 +38,12 @@ interface Props {
 export function TaskGraph({
   projectId, userId, initialTasks, initialSections, members, onToggleView, currentView, onOpenDrawer,
 }: Props) {
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
   const { nodes, edges, ghostNodes, ghostEdges, onNodesChange, onEdgesChange, buildFromData, removeTaskNode } = useGraphStore()
   const membersRef = useRef(members)
   membersRef.current = members
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [quickAdd, setQuickAdd] = useState<{ x: number; y: number; sectionId: string | null } | null>(null)
   const [quickAddName, setQuickAddName] = useState('')
@@ -104,7 +106,10 @@ export function TaskGraph({
     const target = event.target as HTMLElement
     const sectionEl = target.closest('[data-id^="section-"]')
     const sectionId = sectionEl ? sectionEl.getAttribute('data-id')?.replace('section-', '') : null
-    setQuickAdd({ x: event.clientX, y: event.clientY, sectionId: sectionId ?? null })
+    const rect = containerRef.current?.getBoundingClientRect()
+    const x = rect ? event.clientX - rect.left : event.clientX
+    const y = rect ? event.clientY - rect.top : event.clientY
+    setQuickAdd({ x, y, sectionId: sectionId ?? null })
     setQuickAddName('')
   }, [])
 
@@ -126,8 +131,18 @@ export function TaskGraph({
   const allNodes = [...nodes, ...ghostNodes]
   const allEdges = [...edges, ...ghostEdges]
 
+  const isEmpty = allNodes.length === 0
+
   return (
-    <div className="w-full h-full relative" onClick={() => quickAdd && setQuickAdd(null)}>
+    <div ref={containerRef} className="w-full h-full relative" onClick={() => quickAdd && setQuickAdd(null)}>
+      {isEmpty && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-400 mb-1">Chưa có task nào</p>
+            <p className="text-xs text-gray-300">Hỏi AI ở bên phải để bắt đầu →</p>
+          </div>
+        </div>
+      )}
       <ReactFlow
         nodes={allNodes}
         edges={allEdges}

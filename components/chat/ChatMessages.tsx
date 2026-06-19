@@ -1,25 +1,16 @@
 'use client'
 import { useRef, useEffect } from 'react'
 import { Message } from './Message'
-import { ActionPreviewCard } from './ActionPreviewCard'
 import { getMessageText } from '@/lib/chat/messageUtils'
-import type { GhostPreview, ToolCall } from '@/stores/chatStore'
 
 interface Props {
   messages: any[]
   isLoading: boolean
-  ghostPreview: GhostPreview | null
-  pendingToolCalls: ToolCall[]
   projectId: string
   onSetReplyTo: (msg: any) => void
-  onCommit: () => void
-  onDiscard: () => void
 }
 
-export function ChatMessages({
-  messages, isLoading, ghostPreview, pendingToolCalls,
-  projectId, onSetReplyTo, onCommit, onDiscard,
-}: Props) {
+export function ChatMessages({ messages, isLoading, projectId, onSetReplyTo }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -27,43 +18,46 @@ export function ChatMessages({
   }, [messages, isLoading])
 
   return (
-    <div className="flex-1 overflow-y-auto px-3 py-3">
+    <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col">
       {messages.length === 0 && !isLoading && (
-        <p className="text-xs text-muted-foreground text-center mt-8">
-          Hỏi AI về project, phân công task, hoặc paste đề bài để bắt đầu.
-        </p>
+        <div className="flex flex-col items-center justify-center flex-1 gap-2.5 py-10 text-center">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-base font-bold"
+            style={{ background: 'linear-gradient(135deg, #5B5BD6, #7C3AED)' }}
+          >
+            ✦
+          </div>
+          <p className="text-sm font-medium text-gray-700">Chào mừng đến Grouply</p>
+          <p className="text-xs text-muted-foreground max-w-[190px] leading-relaxed">
+            Hỏi AI để lên kế hoạch, phân công task, hoặc phân tích đề bài.
+          </p>
+        </div>
       )}
 
-      {messages.map((m: any) => {
-        if (m.role === 'assistant') console.log('[msg]', m.id, JSON.stringify(m).slice(0, 500))
-        const text = getMessageText(m)
-        if (!text) return null
-        return (
-          <Message
-            key={m.id}
-            message={{ id: m.id, role: m.role as 'user' | 'assistant', content: text, timestamp: new Date() }}
-            onReply={onSetReplyTo}
-          />
-        )
-      })}
-
-      {ghostPreview && pendingToolCalls.length > 0 && (
-        <ActionPreviewCard
-          preview={ghostPreview}
-          toolCalls={pendingToolCalls}
-          projectId={projectId}
-          onCommit={onCommit}
-          onDiscard={onDiscard}
-        />
-      )}
+      <div className="flex flex-col gap-0.5">
+        {messages.map((m: any) => {
+          const text = getMessageText(m)
+          if (!text) return null
+          return (
+            <Message
+              key={m.id}
+              message={{ id: m.id, role: m.role as 'user' | 'assistant', content: text, timestamp: new Date() }}
+              onReply={onSetReplyTo}
+            />
+          )
+        })}
+      </div>
 
       {isLoading && (
-        <div className="flex justify-start mb-3">
-          <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm text-muted-foreground">
-            Đang suy nghĩ...
+        <div className="flex justify-start mt-2">
+          <div className="flex items-center gap-1.5 bg-white border border-border rounded-2xl rounded-bl-sm px-3.5 py-2.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:120ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:240ms]" />
           </div>
         </div>
       )}
+
       <div ref={bottomRef} />
     </div>
   )
