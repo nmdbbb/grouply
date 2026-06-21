@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grouply — Design Slides</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --ind:#5B5BD6;--ind2:#7C7CE8;--indbg:rgba(91,91,214,.10);
+      --t:#EEEEF8;--t2:rgba(220,220,240,.55);--t3:rgba(220,220,240,.26);
+      --br:rgba(255,255,255,.07);--br2:rgba(255,255,255,.14);
+      --sf:rgba(255,255,255,.04);--sf2:rgba(255,255,255,.08);
+      --bg:#07071A;
+    }
+    html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--t)}
+
+    /* DECK */
+    #deck{
+      width:calc(100vw / var(--z,1));height:calc(100vh / var(--z,1));
+      position:relative;overflow:hidden;
+      transform:scale(var(--z,1));transform-origin:top left;
+    }
+    .slide{
+      position:absolute;inset:0;display:flex;flex-direction:column;
+      padding:28px 56px 44px;opacity:0;transform:translateX(48px);
+      transition:opacity .4s ease,transform .4s ease;pointer-events:none;
+    }
+    .slide.active{opacity:1;transform:translateX(0);pointer-events:auto}
+    .slide.prev{opacity:0;transform:translateX(-48px)}
+
+    h1{font-size:clamp(2.8rem,4.5vw,4rem);font-weight:800;letter-spacing:-.04em;line-height:1.06}
+    h2{font-size:clamp(1.3rem,2.2vw,1.75rem);font-weight:700;letter-spacing:-.03em;line-height:1.1}
+    h3{font-size:1rem;font-weight:600}
+    p{color:var(--t2)}
+
+    .ey{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ind2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .ey::before{content:'';width:18px;height:1.5px;background:var(--ind2)}
+
+    /* NAV */
+    #nav{position:fixed;right:22px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:100}
+    .nd{width:6px;height:6px;border-radius:50%;background:var(--br2);cursor:pointer;transition:background .2s,transform .2s}
+    .nd.on{background:var(--ind2);transform:scale(1.5)}
+    .nd:hover{background:var(--t2)}
+    #pb,#nb{position:fixed;bottom:24px;background:var(--sf2);border:1px solid var(--br2);color:var(--t2);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;z-index:100}
+    #pb{left:calc(50% - 44px)}#nb{left:calc(50% + 8px)}
+    #pb:hover,#nb:hover{background:var(--indbg);color:var(--ind2);border-color:var(--ind)}
+
+    /* ── SLIDE 1: COVER ─────────────────────────── */
+    .s-cover{background:radial-gradient(ellipse 70% 60% at 50% -10%,rgba(91,91,214,.18) 0%,transparent 70%),var(--bg);justify-content:center}
+    h1 em{font-style:normal;background:linear-gradient(135deg,#7C7CE8,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .sub{font-size:1.05rem;color:var(--t2);max-width:500px;line-height:1.65;margin:18px 0 36px}
+    .tags{display:flex;flex-wrap:wrap;gap:7px}
+    .tag{font-size:11px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--br2);color:var(--t2)}
+    .tgi{border-color:rgba(91,91,214,.4);color:var(--ind2);background:var(--indbg)}
+    .logo{font-size:16px;font-weight:800;color:var(--ind2);letter-spacing:-.04em;margin-bottom:32px}
+
+    /* ── SHARED: BROWSER FRAME ──────────────────── */
+    .ws-wrap{border:1px solid var(--br2);border-radius:12px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);margin-top:10px;flex:1;min-height:0;display:flex;flex-direction:column}
+    .bc{background:#181828;padding:9px 13px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.05)}
+    .bct{display:flex;gap:5px}
+    .bct span{width:9px;height:9px;border-radius:50%}
+    .bct span:nth-child(1){background:#FF5F57}.bct span:nth-child(2){background:#FFBD2E}.bct span:nth-child(3){background:#28CA41}
+    .bcu{flex:1;max-width:280px;margin:0 auto;background:rgba(255,255,255,.05);border-radius:5px;padding:3px 9px;font-size:10px;color:var(--t3);text-align:center}
+    /* app header */
+    .ah{background:#fff;border-bottom:1px solid #E5E7EB;height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+    .ahb{font-size:11px;font-weight:800;color:#5B5BD6;font-family:system-ui}
+    .aht{display:flex;align-items:center;gap:2px;background:#F3F4F6;border-radius:5px;padding:2px}
+    .ahta{font-size:8.5px;font-weight:500;padding:2px 7px;border-radius:3px;color:#6B7280;border:none;background:transparent;font-family:system-ui}
+    .ahta.on{background:#fff;color:#111;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+    /* 3-panel container */
+    .wsp{display:flex;flex:1;min-height:0;overflow:hidden}
+
+    /* SIDEBAR */
+    .wsb{width:170px;flex-shrink:0;background:#F9FAFB;border-right:1px solid #E5E7EB;padding:10px 8px;display:flex;flex-direction:column;gap:1px;position:relative;overflow:hidden}
+    .sbt{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9CA3AF;padding:0 4px;margin-bottom:7px;font-family:system-ui}
+    .sbi{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:5px;font-size:10px;color:#374151;font-family:system-ui}
+    .sbd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .sbc{margin-left:auto;font-size:8.5px;color:#9CA3AF}
+    .sbp{height:3px;background:#E5E7EB;border-radius:2px;margin:5px 6px 9px}
+    .sbpf{height:100%;background:#5B5BD6;border-radius:2px}
+    .contrib{margin-top:auto;padding:7px 6px 5px}
+    .contrib-lbl{font-size:8px;color:#9CA3AF;font-family:system-ui;margin-bottom:3px}
+    .contrib-bar{display:flex;gap:2px;height:5px}
+    .contrib-seg{border-radius:2px}
+
+    /* GRAPH */
+    .wsg{flex:1;position:relative;overflow:hidden;background-color:#F4F5F9;background-image:radial-gradient(circle,#C3C5D3 1px,transparent 1px);background-size:22px 22px}
+    /* graph toolbar overlay */
+    .gt{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E7EB;border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:4}
+    .gt span{font-size:9px;font-weight:500;color:#374151;font-family:system-ui;padding:3px 7px;border-radius:5px;cursor:pointer}
+    .gt span.on{background:#F3F4F6;font-weight:700;color:#111}
+    .gt-div{width:1px;height:14px;background:#E5E7EB}
+    /* sections in graph — flex row, matches real layout */
+    .graph-sections{position:absolute;top:44px;left:12px;right:12px;bottom:10px;display:flex;gap:12px;overflow:hidden}
+    .sec{flex-shrink:0;border-radius:9px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+    .sec-lbl{font-size:11px;font-weight:700;padding:8px 10px 6px;font-family:system-ui}
+    .sec-tasks{padding:6px;display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden}
+    /* task card — matches screenshot */
+    .tc{background:#fff;border-radius:8px;padding:7px 9px;box-shadow:0 1px 4px rgba(0,0,0,.09),0 0 0 .5px rgba(0,0,0,.04);font-family:system-ui}
+    .tc-st{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:999px;margin-bottom:5px}
+    .tc-todo{background:#F3F4F6;color:#6B7280}
+    .tc-doing{background:#DBEAFE;color:#1D4ED8}
+    .tc-review{background:#FEF3C7;color:#B45309}
+    .tc-done{background:#D1FAE5;color:#065F46}
+    .tc-name{font-size:11px;font-weight:600;color:#1F2937;line-height:1.35;margin-bottom:5px}
+    .tc-foot{display:flex;align-items:center;justify-content:space-between}
+    .tc-who{font-size:10px;color:#9CA3AF}
+    .tc-type{font-size:9px;color:#6B7280;font-weight:500}
+    .tc-ghost{background:linear-gradient(135deg,#F5F3FF,#EEF2FF);border:1.5px dashed #5B5BD6;border-radius:8px;padding:7px 9px;font-family:system-ui}
+    .tc-ghost .tc-name{color:#4338CA}
+    .tc-ghost .tc-type{color:#6366F1}
+
+    /* CHAT */
+    .wsc{width:200px;flex-shrink:0;background:#fff;border-left:1px solid #E5E7EB;display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .wch{padding:7px 9px;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#374151;font-family:system-ui}
+    .wcd{width:5px;height:5px;border-radius:50%;background:#5B5BD6}
+    .wm{flex:1;padding:8px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+    .mb{border-radius:9px;padding:5px 8px;font-size:9px;line-height:1.4;max-width:88%;font-family:system-ui}
+    .mbu{background:#5B5BD6;color:#fff;align-self:flex-end;border-radius:9px 9px 2px 9px}
+    .mba{background:#F3F4F6;color:#374151;align-self:flex-start;border-radius:9px 9px 9px 2px}
+    /* preview card in chat */
+    .mpc{margin:0 6px 6px;border:1.5px solid #5B5BD6;border-radius:9px;padding:7px 9px;background:linear-gradient(135deg,#EEF2FF,#F5F3FF);box-shadow:0 0 0 2px rgba(91,91,214,.1),0 3px 10px rgba(91,91,214,.12);font-family:system-ui}
+    .mpl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#4338CA;margin-bottom:3px;display:flex;align-items:center;gap:3px}
+    .mpl::before{content:'';width:4px;height:4px;border-radius:50%;background:#5B5BD6;display:block}
+    .mpt{font-size:9.5px;font-weight:700;color:#1E1B4B;margin-bottom:3px;line-height:1.3}
+    .mpch{font-size:8.5px;color:#4338CA;line-height:1.6;margin-bottom:5px}
+    .mpb{display:flex;gap:3px}
+    .mbp{background:#5B5BD6;color:#fff;border:none;border-radius:4px;padding:2.5px 8px;font-size:8px;font-weight:700;font-family:system-ui;cursor:pointer}
+    .mbo{background:transparent;color:#5B5BD6;border:1px solid rgba(91,91,214,.3);border-radius:4px;padding:2.5px 8px;font-size:8px;font-weight:600;font-family:system-ui;cursor:pointer}
+    .wi{padding:6px 8px;border-top:1px solid #E5E7EB;display:flex;gap:3px}
+    .wim{flex:1;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:4px 8px;font-size:9px;color:#9CA3AF;font-family:system-ui}
+    .wisb{background:#5B5BD6;border:none;border-radius:5px;width:22px;height:22px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+    /* dim/focus overlays */
+    .dim-ov{position:absolute;inset:0;background:rgba(7,7,26,.60);z-index:5;pointer-events:none}
+    .focus-ring{box-shadow:inset 0 0 0 2.5px #5B5BD6}
+
+    /* description strip above diagram */
+    .desc-strip{display:grid;grid-template-columns:auto 1fr;gap:10px 32px;align-items:center;flex-shrink:0}
+    .desc-title h2{margin-bottom:3px;font-size:clamp(1.2rem,2vw,1.55rem)}
+    .desc-title p{font-size:12px;color:var(--t2);line-height:1.55;max-width:320px;margin-top:2px}
+    .feat-row{display:flex;flex-wrap:wrap;gap:4px 16px}
+    .feat-item{font-size:11.5px;color:var(--t2);display:flex;align-items:center;gap:5px}
+    .feat-item::before{content:'';width:3.5px;height:3.5px;border-radius:50%;background:var(--ind2);flex-shrink:0}
+    .panel-chip{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ind2);background:var(--indbg);border:1px solid rgba(91,91,214,.3);border-radius:999px;padding:3px 10px;margin-bottom:8px;flex-shrink:0}
+
+    /* ── SLIDE 5: AI FLOW ────────────────────────── */
+    .fg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--br);border:1px solid var(--br);border-radius:12px;overflow:hidden;margin-top:12px}
+    .fs{background:var(--bg);padding:16px 14px;overflow:hidden}
+    .fsn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ind2);margin-bottom:7px}
+    .fs h3{font-size:14px;margin-bottom:5px}
+    .fs p{font-size:11.5px;color:var(--t2);line-height:1.55;margin-bottom:12px}
+    .fv{padding:10px;background:rgba(0,0,0,.25);border-radius:8px}
+    .fvi{background:#fff;border:1px solid #D1D5DB;border-radius:5px;padding:5px 7px;font-size:9px;color:#374151;line-height:1.4;margin-bottom:5px;font-family:system-ui}
+    .fvb{display:inline-block;background:#5B5BD6;color:#fff;border-radius:4px;padding:2px 8px;font-size:8.5px;font-weight:700;font-family:system-ui}
+    .fvai{background:#F3F4F6;border-radius:7px 7px 7px 2px;padding:5px 8px;font-size:9px;color:#374151;line-height:1.4;font-family:system-ui;max-width:90%}
+    .fvc{font-size:8px;color:rgba(255,255,255,.28);margin-top:6px;line-height:1.7;font-family:'Courier New',monospace}
+    .fvg{border:1.5px dashed #5B5BD6;border-radius:5px;background:linear-gradient(135deg,#F5F3FF,#EEF2FF);padding:4px 7px;font-size:9px;color:#4338CA;font-weight:600;margin-bottom:4px;font-family:system-ui}
+    .fvcard{border:1.5px solid #5B5BD6;border-radius:7px;background:#EEF2FF;padding:5px 8px;font-size:9px;color:#1E1B4B;font-weight:700;font-family:system-ui;box-shadow:0 0 0 2px rgba(91,91,214,.1)}
+    .fvs{background:#fff;border-radius:5px;padding:4px 7px;font-size:9px;color:#1F2937;font-weight:600;margin-bottom:4px;box-shadow:0 1px 3px rgba(0,0,0,.1);border-left:3px solid #22c55e;font-family:system-ui}
+
+    /* ── SLIDE 6: COMPONENTS ─────────────────────── */
+    .cs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:12px}
+    .cc{display:flex;flex-direction:column;gap:10px;overflow:hidden}
+    .clbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ind2)}
+    .ann-box{background:#EEEEF8;border-radius:10px;padding:14px;position:relative}
+    /* annotation badge */
+    .ab{position:absolute;width:17px;height:17px;border-radius:50%;background:var(--ind);color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #EEEEF8,0 2px 6px rgba(91,91,214,.4);font-family:system-ui}
+    /* legend */
+    .al{display:flex;flex-direction:column;gap:5px}
+    .ali{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--t2);line-height:1.4}
+    .aln{width:16px;height:16px;border-radius:50%;background:var(--ind);color:#fff;font-size:7.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:system-ui;margin-top:1px}
+    /* annotated task card */
+    .atc{background:#fff;border-radius:9px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.09),0 0 0 .5px rgba(0,0,0,.04);font-family:system-ui;width:150px;position:relative}
+    .atcs{height:2px}
+    .atcb{padding:8px 10px}
+    .atc-st{display:inline-block;font-size:8px;font-weight:600;padding:1px 6px;border-radius:999px;margin-bottom:5px}
+    .atc-name{font-size:10.5px;font-weight:600;color:#1F2937;line-height:1.3;margin-bottom:5px}
+    .atc-foot{display:flex;align-items:center;justify-content:space-between}
+    .atc-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:700}
+    .atc-ty{font-size:8.5px;background:#F3F4F6;color:#6B7280;padding:1px 5px;border-radius:3px}
+    /* section demo */
+    .asec{border-radius:8px;overflow:hidden;font-family:system-ui;width:100%}
+    .asec-lbl{font-size:10px;font-weight:700;padding:7px 10px 5px}
+    .asec-body{padding:6px;display:flex;gap:5px}
+    /* ghost */
+    .aghost{border:1.5px dashed #5B5BD6;border-radius:8px;background:linear-gradient(135deg,#F5F3FF,#EEF2FF);overflow:hidden;width:140px;font-family:system-ui}
+    .aghost-strip{height:2px;background:#5B5BD6;opacity:.5}
+    .aghost-body{padding:8px 9px}
+    /* apc */
+    .apc{border:1.5px solid #5B5BD6;border-radius:11px;padding:13px 15px;background:linear-gradient(135deg,#EEF2FF,#F5F3FF);box-shadow:0 0 0 3px rgba(91,91,214,.1),0 6px 24px rgba(91,91,214,.12);font-family:system-ui}
+    .apcl{display:flex;align-items:center;gap:5px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4338CA;margin-bottom:6px}
+    .apcd{width:5px;height:5px;border-radius:50%;background:#5B5BD6}
+    .apct{font-size:13px;font-weight:700;color:#1E1B4B;margin-bottom:6px;line-height:1.3}
+    .apcch{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
+    .apci{font-size:10.5px;color:#4338CA;display:flex;gap:5px}
+    .apci::before{content:'→';color:#818CF8;flex-shrink:0}
+    .apcb{display:flex;gap:6px}
+    .abtp{background:#5B5BD6;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:10px;font-weight:700;font-family:system-ui;cursor:pointer}
+    .abto{background:transparent;color:#5B5BD6;border:1.5px solid rgba(91,91,214,.3);border-radius:6px;padding:5px 12px;font-size:10px;font-weight:600;font-family:system-ui;cursor:pointer}
+
+    /* ── DEMO SLIDE ──────────────────────────────── */
+    .s-demo{background:#0C0C22;border-top:2px solid var(--ind);justify-content:flex-start}
+    .dbadge{display:inline-flex;align-items:center;gap:6px;background:var(--indbg);border:1px solid rgba(91,91,214,.3);border-radius:999px;padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ind2);margin-bottom:14px}
+    .dbadge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ind);box-shadow:0 0 6px var(--ind);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .dp{cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+    .dp::after{content:'';position:absolute;inset:0;border:2.5px solid transparent;transition:border-color .25s;pointer-events:none;z-index:6}
+    .dp:hover::after,.dp.hl::after{border-color:var(--ind)}
+    .dp.dm{opacity:.3}
+    .dtt{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:#1A1A2C;border:1px solid var(--br2);border-radius:8px;padding:9px 13px;font-size:11px;z-index:10;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.5);text-align:left;white-space:nowrap}
+    .dp:hover .dtt,.dp.hl .dtt{opacity:1}
+    .dtt strong{display:block;color:var(--t);margin-bottom:3px;font-size:12px}
+    .dtt span{color:var(--t2);line-height:1.5;display:block;max-width:220px;white-space:normal}
+    .dhint{font-size:11px;color:var(--t3);text-align:center;margin-top:10px}
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ── SLIDE 1: COVER ─────────────────────────────── -->
+  <div class="slide s-cover active" data-i="0">
+    <div style="max-width:800px">
+      <div class="logo">✦ Grouply</div>
+      <div class="ey">Design Presentation</div>
+      <h1>Giao diện<br/>quản lý nhóm<br/>với <em>AI trong vòng lặp</em></h1>
+      <p class="sub">Workspace kết hợp checklist, task graph và AI assistant — thiết kế để sinh viên lên kế hoạch và phân công nhanh hơn.</p>
+      <div class="tags">
+        <span class="tag tgi">Next.js 16</span>
+        <span class="tag tgi">React Flow</span>
+        <span class="tag tgi">Vercel AI SDK</span>
+        <span class="tag">Supabase</span>
+        <span class="tag">Tailwind CSS</span>
+        <span class="tag">TypeScript</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELPER: section node macro -->
+  <!-- Used inline in slides below -->
+
+  <!-- ── SLIDE 2: LAYOUT — SIDEBAR ─────────────────── -->
+  <div class="slide" data-i="1">
+    <div class="panel-chip">Panel 1 · Sidebar</div>
+    <div class="desc-strip" style="margin-bottom:6px">
+      <div class="desc-title">
+        <div class="ey">Checklist Sidebar</div>
+        <h2>Theo dõi các yêu cầu đề bài</h2>
+        <p style="margin-top:8px">Mỗi item = một tiêu chí chấm điểm. Khi task Done, tiến độ tự cập nhật.</p>
+      </div>
+      <div class="feat-row" style="align-content:center">
+        <div class="feat-item">Progress bar per item</div>
+        <div class="feat-item">Collapse để nhường chỗ graph</div>
+        <div class="feat-item">Contribution bar — ai làm bao nhiêu</div>
+        <div class="feat-item">Resize bằng divider kéo được</div>
+      </div>
+    </div>
+    <div class="ws-wrap">
+      <div class="bc"><div class="bct"><span></span><span></span><span></span></div><div class="bcu">grouply.app / big-data-project</div></div>
+      <div class="ah"><span class="ahb">Grouply / Big Data Project</span><div class="aht"><button class="ahta on">Graph</button><button class="ahta">List</button><button class="ahta">Timeline</button><button class="ahta">Tài liệu</button></div></div>
+      <div class="wsp">
+        <!-- SIDEBAR FOCUSED -->
+        <div class="wsb focus-ring" style="width:185px">
+          <div class="sbt">Checklist</div>
+          <div class="sbi"><span class="sbd" style="background:#22c55e"></span>Phân tích yêu cầu<span class="sbc">4/4</span></div>
+          <div class="sbi"><span class="sbd" style="background:#3B82F6"></span>Cài đặt tính năng<span class="sbc">3/8</span></div>
+          <div class="sbi"><span class="sbd" style="background:#F59E0B"></span>Kiểm thử<span class="sbc">0/4</span></div>
+          <div class="sbp"><div class="sbpf" style="width:41%"></div></div>
+          <div class="sbi"><span class="sbd" style="background:#E5E7EB"></span>Báo cáo & slide<span class="sbc">0/3</span></div>
+          <div class="sbi"><span class="sbd" style="background:#E5E7EB"></span>Deploy<span class="sbc">0/2</span></div>
+          <div class="contrib">
+            <div class="contrib-lbl">Đóng góp nhóm</div>
+            <div class="contrib-bar">
+              <div class="contrib-seg" style="background:#5B5BD6;flex:4"></div>
+              <div class="contrib-seg" style="background:#22c55e;flex:3"></div>
+              <div class="contrib-seg" style="background:#F59E0B;flex:2"></div>
+              <div class="contrib-seg" style="background:#EC4899;flex:1"></div>
+            </div>
+          </div>
+        </div>
+        <!-- GRAPH dim -->
+        <div class="wsg"><div class="dim-ov"></div>
+          <div class="gt"><span>Auto-layout</span><span>Zoom fit</span><div class="gt-div"></div><span class="on">Graph</span><span>List</span></div>
+          <div class="graph-sections" style="top:48px">
+            <div class="sec" style="width:140px;border:1.5px solid hsl(220,40%,82%);background:hsl(220,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(220,55%,42%)">2. Thiết kế kiến trúc</div>
+              <div class="sec-tasks"><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Thiết kế Lambda/Kappa</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div></div>
+            </div>
+            <div class="sec" style="width:140px;border:1.5px solid hsl(350,40%,82%);background:hsl(350,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(350,55%,42%)">3. Data Ingestion</div>
+              <div class="sec-tasks"><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Cài đặt Kafka cluster</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- CHAT dim -->
+        <div class="wsc"><div class="dim-ov"></div><div class="wch"><div class="wcd"></div>AI Chat</div><div class="wm"><div class="mb mba">Hỏi AI về project...</div></div><div class="wi"><div class="wim">Nhập câu hỏi...</div><button class="wisb">↑</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: LAYOUT — GRAPH ────────────────────── -->
+  <div class="slide" data-i="2">
+    <div class="panel-chip">Panel 2 · Graph</div>
+    <div class="desc-strip" style="margin-bottom:6px">
+      <div class="desc-title">
+        <div class="ey">Task Graph</div>
+        <h2>Toàn cảnh project trên một màn hình</h2>
+        <p style="margin-top:8px">Kéo thả tự do, tạo dependency, xem trạng thái task theo màu.</p>
+      </div>
+      <div class="feat-row" style="align-content:center">
+        <div class="feat-item">Section node — container theo chủ đề</div>
+        <div class="feat-item">Ghost node dashed = AI đề xuất chưa commit</div>
+        <div class="feat-item">Double-click canvas → tạo task nhanh</div>
+        <div class="feat-item">Auto-layout bằng Dagre, Zoom fit</div>
+        <div class="feat-item">Dependency edges giữa các task</div>
+      </div>
+    </div>
+    <div class="ws-wrap">
+      <div class="bc"><div class="bct"><span></span><span></span><span></span></div><div class="bcu">grouply.app / big-data-project</div></div>
+      <div class="ah"><span class="ahb">Grouply / Big Data Project</span><div class="aht"><button class="ahta on">Graph</button><button class="ahta">List</button><button class="ahta">Timeline</button><button class="ahta">Tài liệu</button></div></div>
+      <div class="wsp">
+        <!-- SIDEBAR dim -->
+        <div class="wsb"><div class="dim-ov"></div>
+          <div class="sbt">Checklist</div>
+          <div class="sbi"><span class="sbd" style="background:#22c55e"></span>Phân tích yêu cầu<span class="sbc">4/4</span></div>
+          <div class="sbi"><span class="sbd" style="background:#3B82F6"></span>Cài đặt tính năng<span class="sbc">3/8</span></div>
+        </div>
+        <!-- GRAPH FOCUSED — real production data -->
+        <div class="wsg focus-ring">
+          <div class="gt"><span>Auto-layout</span><span>Zoom fit</span><div class="gt-div"></div><span class="on">Graph</span><span>List</span></div>
+          <div class="graph-sections">
+            <!-- Section 2: Thiết kế kiến trúc Big Data -->
+            <div class="sec" style="width:148px;border:1.5px solid hsl(220,40%,82%);background:hsl(220,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(220,55%,40%)">2. Thiết kế kiến trúc Big Data</div>
+              <div class="sec-tasks">
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Thiết kế kiến trúc Lambda/Kappa</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Thiết kế luồng dữ liệu giữa các service</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-doing">Đang làm</div><div class="tc-name">Thiết kế chiến lược partition</div><div class="tc-foot"><span class="tc-who">Minh</span><span class="tc-type">output</span></div></div>
+              </div>
+            </div>
+            <!-- Section 3: Data Ingestion & Streaming -->
+            <div class="sec" style="width:148px;border:1.5px solid hsl(350,40%,82%);background:hsl(350,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(350,55%,40%)">3. Data Ingestion & Streaming</div>
+              <div class="sec-tasks">
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Cài đặt Kafka cluster</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Xây dựng data producer</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Triển khai Spark Structured Streaming</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc-ghost"><div class="tc-st" style="background:rgba(91,91,214,.12);color:#5B5BD6;display:inline-block;font-size:8px;font-weight:600;padding:1px 6px;border-radius:999px;margin-bottom:4px">AI đề xuất</div><div class="tc-name" style="color:#4338CA">Xử lý watermark</div><div class="tc-foot"><span class="tc-who" style="color:#818CF8">—</span><span class="tc-type" style="color:#6366F1">output</span></div></div>
+              </div>
+            </div>
+            <!-- Section 4: Spark Processing -->
+            <div class="sec" style="width:148px;border:1.5px solid hsl(270,40%,82%);background:hsl(270,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(270,55%,40%)">4. Spark Processing & Analytics</div>
+              <div class="sec-tasks">
+                <div class="tc"><div class="tc-st tc-review">Review</div><div class="tc-name">Xây dựng pipeline transform</div><div class="tc-foot"><span class="tc-who">Thảo</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Tối ưu join strategy</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Triển khai advanced aggregations</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+              </div>
+            </div>
+            <!-- Section 5: Storage -->
+            <div class="sec" style="width:148px;border:1.5px solid hsl(20,40%,82%);background:hsl(20,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(20,55%,40%)">5. Storage & Database</div>
+              <div class="sec-tasks">
+                <div class="tc"><div class="tc-st tc-done">Xong</div><div class="tc-name">Triển khai HDFS hoặc distributed storage</div><div class="tc-foot"><span class="tc-who">Đức</span><span class="tc-type">output</span></div></div>
+                <div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Tích hợp NoSQL database</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- CHAT dim -->
+        <div class="wsc"><div class="dim-ov"></div><div class="wch"><div class="wcd"></div>AI Chat</div><div class="wm"><div class="mb mbu">Thêm task cho Spark</div><div class="mb mba">Tôi sẽ đề xuất...</div></div><div class="wi"><div class="wim">Hỏi AI...</div><button class="wisb">↑</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: LAYOUT — CHAT ─────────────────────── -->
+  <div class="slide" data-i="3">
+    <div class="panel-chip">Panel 3 · AI Chat</div>
+    <div class="desc-strip" style="margin-bottom:6px">
+      <div class="desc-title">
+        <div class="ey">AI Chat Panel</div>
+        <h2>AI đề xuất, người dùng quyết định</h2>
+        <p style="margin-top:8px">Mọi thay đổi hiện qua ActionPreviewCard — không tự ghi vào database.</p>
+      </div>
+      <div class="feat-row" style="align-content:center">
+        <div class="feat-item">Groq / Gemini / Anthropic API</div>
+        <div class="feat-item">Simulate mode — không cần API key</div>
+        <div class="feat-item">ActionPreviewCard slide-up với indigo glow</div>
+        <div class="feat-item">AI đọc đề bài + lịch sử hoạt động</div>
+        <div class="feat-item">Reply message, đính kèm file</div>
+      </div>
+    </div>
+    <div class="ws-wrap">
+      <div class="bc"><div class="bct"><span></span><span></span><span></span></div><div class="bcu">grouply.app / big-data-project</div></div>
+      <div class="ah"><span class="ahb">Grouply / Big Data Project</span><div class="aht"><button class="ahta on">Graph</button><button class="ahta">List</button><button class="ahta">Timeline</button><button class="ahta">Tài liệu</button></div></div>
+      <div class="wsp">
+        <!-- SIDEBAR dim -->
+        <div class="wsb"><div class="dim-ov"></div>
+          <div class="sbt">Checklist</div>
+          <div class="sbi"><span class="sbd" style="background:#22c55e"></span>Phân tích yêu cầu<span class="sbc">4/4</span></div>
+          <div class="sbi"><span class="sbd" style="background:#3B82F6"></span>Cài đặt tính năng<span class="sbc">3/8</span></div>
+        </div>
+        <!-- GRAPH dim -->
+        <div class="wsg"><div class="dim-ov"></div>
+          <div class="gt"><span>Auto-layout</span><span>Zoom fit</span><div class="gt-div"></div><span class="on">Graph</span><span>List</span></div>
+          <div class="graph-sections" style="top:48px">
+            <div class="sec" style="width:140px;border:1.5px solid hsl(220,40%,82%);background:hsl(220,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(220,55%,40%)">2. Thiết kế kiến trúc</div>
+              <div class="sec-tasks"><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Thiết kế Lambda/Kappa</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div></div>
+            </div>
+            <div class="sec" style="width:140px;border:1.5px solid hsl(350,40%,82%);background:hsl(350,50%,97%)">
+              <div class="sec-lbl" style="color:hsl(350,55%,40%)">3. Data Ingestion</div>
+              <div class="sec-tasks"><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Cài đặt Kafka cluster</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div><div class="tc-ghost"><div class="tc-name" style="color:#4338CA">Xây dựng producer</div></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- CHAT FOCUSED -->
+        <div class="wsc focus-ring" style="width:210px">
+          <div class="wch"><div class="wcd"></div>AI Chat · Groq</div>
+          <div class="wm">
+            <div class="mb mbu">Lên kế hoạch Data Ingestion cho Big Data</div>
+            <div class="mb mba">Dựa trên đề bài, tôi sẽ tạo section với 4 task phù hợp với checklist item 3...</div>
+          </div>
+          <div class="mpc">
+            <div class="mpl">AI đề xuất · 5 thay đổi</div>
+            <div class="mpt">Kế hoạch Data Ingestion</div>
+            <div class="mpch">→ Section: Data Ingestion<br/>→ Task: Kafka cluster<br/>→ Task: Data producer<br/>→ Task: Spark Streaming<br/>→ Task: Watermark</div>
+            <div class="mpb"><button class="mbp">Áp dụng</button><button class="mbo">Bỏ qua</button></div>
+          </div>
+          <div class="wi"><div class="wim">Hỏi AI về project...</div><button class="wisb">↑</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: AI WORKFLOW ────────────────────────── -->
+  <div class="slide" data-i="4">
+    <div class="ey">AI Workflow</div>
+    <h2>Human-in-the-loop — AI đề xuất, người commit</h2>
+    <div class="fg">
+      <div class="fs">
+        <div class="fsn">Bước 1</div>
+        <h3>Người dùng đặt câu hỏi</h3>
+        <p>Nhập yêu cầu bằng ngôn ngữ tự nhiên.</p>
+        <div class="fv">
+          <div class="fvi">"Lên kế hoạch Data Ingestion cho Big Data project"</div>
+          <div class="fvb">Gửi ↑</div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fsn">Bước 2</div>
+        <h3>AI đọc context & gọi tools</h3>
+        <p>Đọc đề bài, xem checklist, gọi <code style="font-size:9px;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px">add_section</code> + <code style="font-size:9px;background:rgba(255,255,255,.08);padding:1px 4px;border-radius:3px">add_task</code>.</p>
+        <div class="fv">
+          <div class="fvai">Dựa trên đề bài, tôi đề xuất 4 task cho section Data Ingestion...</div>
+          <div class="fvc">→ add_section("Data Ingestion")<br/>→ add_task("Kafka cluster")<br/>→ add_task("Data producer")</div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fsn">Bước 3</div>
+        <h3>Ghost preview xuất hiện</h3>
+        <p>Node dashed trên graph + ActionPreviewCard slide-up. Chưa lưu.</p>
+        <div class="fv">
+          <div class="fvg">📐 Section: Data Ingestion</div>
+          <div class="fvg">✦ Task: Kafka cluster</div>
+          <div class="fvcard">AI đề xuất · 5 thay đổi<br/>Kế hoạch Data Ingestion</div>
+        </div>
+      </div>
+      <div class="fs">
+        <div class="fsn">Bước 4</div>
+        <h3>Người dùng commit</h3>
+        <p>Nhấn "Áp dụng" → ghi vào Supabase, ghost nodes trở thành task thật.</p>
+        <div class="fv">
+          <div class="fvs">✓ Section: Data Ingestion</div>
+          <div class="fvs">✓ Task: Kafka cluster</div>
+          <div class="fvs">✓ Task: Data producer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: COMPONENTS ────────────────────────── -->
+  <div class="slide" data-i="5">
+    <div class="ey">Components</div>
+    <h2 style="margin-bottom:16px">Các thành phần — chỗ nào cần nhìn vào</h2>
+    <div class="cs">
+
+      <!-- COL 1: TaskNode -->
+      <div class="cc">
+        <div class="clbl">Task Node</div>
+        <div class="ann-box">
+          <!-- Single annotated card -->
+          <div class="atc">
+            <div class="atcs" style="background:#3B82F6"></div>
+            <div class="atcb">
+              <div class="atc-st" style="background:#DBEAFE;color:#1D4ED8">Đang làm</div>
+              <div class="atc-name">Xây dựng pipeline transform nhiều giai đoạn</div>
+              <div class="atc-foot">
+                <div class="atc-av" style="background:#EEF2FF;color:#4338CA">TH</div>
+                <div class="atc-ty">output</div>
+              </div>
+            </div>
+            <div class="ab" style="top:-6px;left:50%;transform:translateX(-50%)">①</div>
+            <div class="ab" style="top:22px;left:-6px">②</div>
+            <div class="ab" style="top:46px;right:-6px">③</div>
+            <div class="ab" style="bottom:5px;left:-6px">④</div>
+            <div class="ab" style="bottom:5px;right:-6px">⑤</div>
+          </div>
+          <!-- 3 status variants -->
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <div style="flex:1;background:#fff;border-radius:7px;padding:5px 6px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-family:system-ui">
+              <div style="height:2px;background:#C8C5B8;margin:-5px -6px 4px;border-radius:0"></div>
+              <div class="tc-st tc-todo" style="font-size:7.5px">Chưa làm</div>
+              <div style="font-size:9px;font-weight:600;color:#1F2937">Schema thiết kế</div>
+            </div>
+            <div style="flex:1;background:#fff;border-radius:7px;padding:5px 6px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-family:system-ui">
+              <div style="height:2px;background:#D97706;margin:-5px -6px 4px"></div>
+              <div class="tc-st tc-review" style="font-size:7.5px">Review</div>
+              <div style="font-size:9px;font-weight:600;color:#1F2937">API Auth</div>
+            </div>
+            <div style="flex:1;background:#fff;border-radius:7px;padding:5px 6px;box-shadow:0 1px 3px rgba(0,0,0,.07);opacity:.7;font-family:system-ui">
+              <div style="height:2px;background:#22c55e;margin:-5px -6px 4px"></div>
+              <div class="tc-st tc-done" style="font-size:7.5px">Xong</div>
+              <div style="font-size:9px;font-weight:600;color:#1F2937">Setup DB</div>
+            </div>
+          </div>
+        </div>
+        <div class="al">
+          <div class="ali"><div class="aln">①</div>Strip màu 2px theo status (xanh/vàng/xanh lá)</div>
+          <div class="ali"><div class="aln">②</div>Badge trạng thái — click để cycle</div>
+          <div class="ali"><div class="aln">③</div>Tên task, line-clamp 2 dòng</div>
+          <div class="ali"><div class="aln">④</div>Avatar + initials người được assign</div>
+          <div class="ali"><div class="aln">⑤</div>Task type: output / feature / fix</div>
+        </div>
+      </div>
+
+      <!-- COL 2: Section + Ghost -->
+      <div class="cc">
+        <div class="clbl">Section Node</div>
+        <div class="ann-box">
+          <div class="asec" style="border:1.5px solid hsl(350,40%,82%);background:hsl(350,50%,97%);position:relative">
+            <div class="asec-lbl" style="color:hsl(350,55%,40%)">3. Data Ingestion & Streaming</div>
+            <div class="asec-body">
+              <div class="tc" style="width:90px"><div class="tc-st tc-todo" style="font-size:7.5px">Chưa làm</div><div class="tc-name" style="font-size:9px">Kafka cluster</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div>
+              <div class="tc-ghost" style="width:90px;padding:5px 6px"><div class="tc-st" style="display:inline-block;font-size:7.5px;font-weight:600;background:rgba(91,91,214,.12);color:#5B5BD6;padding:1px 5px;border-radius:999px;margin-bottom:3px">AI đề xuất</div><div class="tc-name" style="font-size:9px;color:#4338CA">Data producer</div></div>
+            </div>
+            <div class="ab" style="top:-6px;left:50%;transform:translateX(-50%)">①</div>
+            <div class="ab" style="top:20px;right:-6px">②</div>
+            <div class="ab" style="bottom:-6px;right:50%;transform:translateX(50%)">③</div>
+          </div>
+        </div>
+        <div class="al">
+          <div class="ali"><div class="aln">①</div>Label nhỏ + màu từ hash tên section</div>
+          <div class="ali"><div class="aln">②</div>Border màu tương ứng (hsl từ hash)</div>
+          <div class="ali"><div class="aln">③</div>Ghost node (dashed indigo) — AI đề xuất chưa commit</div>
+        </div>
+        <div class="clbl" style="margin-top:8px">Ghost Task Node</div>
+        <div class="ann-box">
+          <div class="aghost" style="position:relative">
+            <div class="aghost-strip"></div>
+            <div class="aghost-body">
+              <div style="font-size:10px;font-weight:600;color:#4338CA;margin-bottom:3px;font-family:system-ui">Xử lý watermark và exactly-once</div>
+              <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6366F1;font-family:system-ui">AI đề xuất · output</div>
+            </div>
+            <div class="ab" style="top:4px;right:-6px">④</div>
+          </div>
+        </div>
+        <div class="al">
+          <div class="ali"><div class="aln">④</div>Dashed border indigo, nền gradient, không tương tác — chưa phải dữ liệu thật</div>
+        </div>
+      </div>
+
+      <!-- COL 3: ActionPreviewCard -->
+      <div class="cc">
+        <div class="clbl">ActionPreviewCard</div>
+        <div class="ann-box" style="padding:20px 14px 14px">
+          <div class="apc" style="position:relative">
+            <div class="apcl"><div class="apcd"></div>AI đề xuất · 5 thay đổi</div>
+            <div class="apct">Kế hoạch Data Ingestion</div>
+            <div class="apcch">
+              <div class="apci">Section: "Data Ingestion"</div>
+              <div class="apci">Task: Cài đặt Kafka cluster</div>
+              <div class="apci">Task: Xây dựng data producer</div>
+              <div class="apci">Task: Spark Structured Streaming</div>
+            </div>
+            <div class="apcb">
+              <button class="abtp">Áp dụng</button>
+              <button class="abto">Bỏ qua</button>
+            </div>
+            <div class="ab" style="top:-10px;left:50%;transform:translateX(-50%)">①</div>
+            <div class="ab" style="top:7px;right:-6px">②</div>
+            <div class="ab" style="top:46px;right:-6px">③</div>
+            <div class="ab" style="bottom:5px;left:-6px">④</div>
+          </div>
+        </div>
+        <div class="al">
+          <div class="ali"><div class="aln">①</div>Indigo glow ring — box-shadow 3px, tách biệt hoàn toàn khỏi chat bubble</div>
+          <div class="ali"><div class="aln">②</div>Label + dot + số thay đổi</div>
+          <div class="ali"><div class="aln">③</div>Danh sách thay đổi trước khi commit</div>
+          <div class="ali"><div class="aln">④</div>Áp dụng → commit API, Bỏ qua → clear ghost nodes</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: INTERACTIVE DEMO ──────────────────── -->
+  <div class="slide s-demo" data-i="6">
+    <div class="dbadge">Demo tương tác</div>
+    <h2 style="margin-bottom:6px">Hover vào từng panel</h2>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:10px">Slide tách riêng — hover để xem mô tả chi tiết từng vùng.</p>
+    <div class="ws-wrap">
+      <div class="bc"><div class="bct"><span></span><span></span><span></span></div><div class="bcu">grouply.app / big-data-project</div></div>
+      <div class="ah"><span class="ahb">Grouply / Big Data Project</span><div class="aht"><button class="ahta on">Graph</button><button class="ahta">List</button><button class="ahta">Timeline</button></div></div>
+      <div class="wsp">
+        <!-- sidebar -->
+        <div class="wsb dp" id="dSb" onmouseenter="dhl('sb')" onmouseleave="dun()">
+          <div class="sbt">Checklist</div>
+          <div class="sbi"><span class="sbd" style="background:#22c55e"></span>Phân tích yêu cầu<span class="sbc">4/4</span></div>
+          <div class="sbi"><span class="sbd" style="background:#3B82F6"></span>Cài đặt tính năng<span class="sbc">3/8</span></div>
+          <div class="sbi"><span class="sbd" style="background:#F59E0B"></span>Kiểm thử<span class="sbc">0/4</span></div>
+          <div class="sbp"><div class="sbpf" style="width:41%"></div></div>
+          <div class="sbi"><span class="sbd" style="background:#E5E7EB"></span>Báo cáo & slide<span class="sbc">0/3</span></div>
+          <div class="contrib"><div class="contrib-lbl">Đóng góp</div><div class="contrib-bar"><div class="contrib-seg" style="background:#5B5BD6;flex:4"></div><div class="contrib-seg" style="background:#22c55e;flex:3"></div><div class="contrib-seg" style="background:#F59E0B;flex:2"></div></div></div>
+          <div class="dtt" style="left:180px;transform:none;bottom:30px">
+            <strong>Checklist Sidebar</strong>
+            <span>Theo dõi hạng mục từ đề bài. Collapse sidebar, resize divider, xem ai đang đóng góp bao nhiêu.</span>
+          </div>
+        </div>
+        <!-- graph -->
+        <div class="wsg dp" id="dGr" onmouseenter="dhl('gr')" onmouseleave="dun()">
+          <div class="gt"><span>Auto-layout</span><span>Zoom fit</span><div class="gt-div"></div><span class="on">Graph</span><span>List</span></div>
+          <div class="graph-sections">
+            <div class="sec" style="width:138px;border:1.5px solid hsl(220,40%,82%);background:hsl(220,50%,97%)"><div class="sec-lbl" style="color:hsl(220,55%,40%)">2. Thiết kế kiến trúc</div><div class="sec-tasks"><div class="tc"><div class="tc-st tc-doing">Đang làm</div><div class="tc-name">Thiết kế Lambda/Kappa</div><div class="tc-foot"><span class="tc-who">Minh</span><span class="tc-type">output</span></div></div><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Luồng dữ liệu</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div></div></div>
+            <div class="sec" style="width:138px;border:1.5px solid hsl(350,40%,82%);background:hsl(350,50%,97%)"><div class="sec-lbl" style="color:hsl(350,55%,40%)">3. Data Ingestion</div><div class="sec-tasks"><div class="tc"><div class="tc-st tc-todo">Chưa làm</div><div class="tc-name">Kafka cluster</div><div class="tc-foot"><span class="tc-who">—</span><span class="tc-type">output</span></div></div><div class="tc-ghost"><div class="tc-name" style="color:#4338CA">Data producer</div><div class="tc-foot"><span class="tc-who" style="color:#818CF8">—</span><span class="tc-type" style="color:#6366F1">output</span></div></div></div></div>
+            <div class="sec" style="width:138px;border:1.5px solid hsl(270,40%,82%);background:hsl(270,50%,97%)"><div class="sec-lbl" style="color:hsl(270,55%,40%)">4. Spark Processing</div><div class="sec-tasks"><div class="tc"><div class="tc-st tc-review">Review</div><div class="tc-name">Pipeline transform</div><div class="tc-foot"><span class="tc-who">Thảo</span><span class="tc-type">output</span></div></div><div class="tc"><div class="tc-st tc-done">Xong</div><div class="tc-name">Tối ưu join strategy</div><div class="tc-foot"><span class="tc-who">Đức</span><span class="tc-type">output</span></div></div></div></div>
+          </div>
+          <div class="dtt" style="bottom:20px">
+            <strong>Task Graph</strong>
+            <span>Kéo thả task, kết nối dependency. Dashed indigo = AI đề xuất chưa commit. Auto-layout bằng Dagre.</span>
+          </div>
+        </div>
+        <!-- chat -->
+        <div class="wsc dp" id="dCh" onmouseenter="dhl('ch')" onmouseleave="dun()" style="width:210px">
+          <div class="wch"><div class="wcd"></div>AI Chat · Groq</div>
+          <div class="wm">
+            <div class="mb mbu">Lên kế hoạch Data Ingestion</div>
+            <div class="mb mba">Dựa trên đề bài, tôi đề xuất 5 task cho section này...</div>
+          </div>
+          <div class="mpc">
+            <div class="mpl">AI đề xuất · 5 thay đổi</div>
+            <div class="mpt">Kế hoạch Data Ingestion</div>
+            <div class="mpch">→ Section + 4 tasks</div>
+            <div class="mpb"><button class="mbp">Áp dụng</button><button class="mbo">Bỏ qua</button></div>
+          </div>
+          <div class="wi"><div class="wim">Hỏi AI về project...</div><button class="wisb">↑</button></div>
+          <div class="dtt" style="left:auto;right:0;transform:none;bottom:55px">
+            <strong>AI Chat Panel</strong>
+            <span>ActionPreviewCard slide-up với indigo glow. Mọi thay đổi cần xác nhận trước khi lưu vào Supabase.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dhint">Hover Sidebar — Graph — Chat để xem mô tả</div>
+  </div>
+
+</div>
+
+<!-- CONTROLS -->
+<div id="nav"></div>
+<button id="pb" onclick="go(-1)">←</button>
+<button id="nb" onclick="go(1)">→</button>
+
+<!-- ZOOM CONTROL -->
+<div id="zctrl" style="
+  position:fixed;right:48px;bottom:20px;z-index:200;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(7,7,26,.85);border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;padding:5px 12px;backdrop-filter:blur(8px);
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+">
+  <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(124,124,232,.8)">Zoom</span>
+  <input id="zrange" type="range" min="60" max="140" value="100" step="5" style="
+    width:90px;height:3px;accent-color:#5B5BD6;cursor:pointer;
+  ">
+  <span id="zlbl" style="font-size:10px;font-weight:700;color:rgba(238,238,248,.7);min-width:32px;text-align:right">100%</span>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide')
+  const navEl = document.getElementById('nav')
+  const labels = ['Cover','Sidebar','Graph','Chat','AI Flow','Components','Demo']
+  let cur = 0
+
+  slides.forEach((_,i)=>{
+    const d=document.createElement('div')
+    d.className='nd'+(i===0?' on':'')
+    d.title=labels[i]||''
+    d.onclick=()=>goTo(i)
+    navEl.appendChild(d)
+  })
+
+  function goTo(n){
+    slides[cur].classList.remove('active');slides[cur].classList.add('prev')
+    setTimeout(()=>slides[cur].classList.remove('prev'),400)
+    cur=(n+slides.length)%slides.length
+    slides[cur].classList.add('active')
+    document.querySelectorAll('.nd').forEach((d,i)=>d.classList.toggle('on',i===cur))
+  }
+  function go(d){goTo(cur+d)}
+
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();go(1)}
+    if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(-1)}
+  })
+
+  // Zoom
+  const zrange = document.getElementById('zrange')
+  const zlbl = document.getElementById('zlbl')
+  function applyZoom(v){
+    document.documentElement.style.setProperty('--z', v/100)
+    zlbl.textContent = v + '%'
+  }
+  zrange.addEventListener('input', () => applyZoom(+zrange.value))
+  document.addEventListener('keydown', e => {
+    if(e.key==='+' || (e.key==='=' && e.ctrlKey)){e.preventDefault();zrange.value=Math.min(140,+zrange.value+5);applyZoom(+zrange.value)}
+    if(e.key==='-' && e.ctrlKey){e.preventDefault();zrange.value=Math.max(60,+zrange.value-5);applyZoom(+zrange.value)}
+    if(e.key==='0' && e.ctrlKey){e.preventDefault();zrange.value=100;applyZoom(100)}
+  })
+
+  function dhl(id){
+    ['sb','gr','ch'].forEach(p=>{
+      const el=document.getElementById('d'+p.charAt(0).toUpperCase()+p.slice(1))
+      if(!el)return
+      el.classList.toggle('hl',p===id)
+      el.classList.toggle('dm',p!==id)
+    })
+  }
+  function dun(){
+    ['dSb','dGr','dCh'].forEach(id=>{
+      const el=document.getElementById(id)
+      if(el){el.classList.remove('hl','dm')}
+    })
+  }
+</script>
+</body>
+</html>
