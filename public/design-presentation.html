@@ -682,6 +682,139 @@
     <div class="dhint">Hover Sidebar — Graph — Chat để xem mô tả</div>
   </div>
 
+  <!-- ── SLIDE 8: MEMBER DASHBOARD ─────────────────── -->
+  <div class="slide" data-i="7" style="padding-bottom:52px">
+    <div class="ey">Trang riêng · /project/[id]/members</div>
+    <h2 style="margin-bottom:4px">Dashboard đóng góp từng thành viên</h2>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:10px;flex-shrink:0">Xếp hạng theo task done · % đóng góp nhóm · cảnh báo bị block</p>
+
+    <!-- Summary bar -->
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px 10px 0 0;border-bottom:1px solid #E5E7EB;padding:10px 18px;display:flex;align-items:center;gap:20px;flex-shrink:0;font-family:system-ui">
+      <div style="display:flex;flex-direction:column"><span style="font-size:18px;font-weight:800;color:#111">4</span><span style="font-size:9px;color:#9CA3AF">Thành viên</span></div>
+      <div style="width:1px;height:28px;background:#E5E7EB"></div>
+      <div style="display:flex;flex-direction:column"><span style="font-size:18px;font-weight:800;color:#0D9488">11</span><span style="font-size:9px;color:#9CA3AF">Task hoàn thành</span></div>
+      <div style="width:1px;height:28px;background:#E5E7EB"></div>
+      <div style="display:flex;flex-direction:column"><span style="font-size:18px;font-weight:800;color:#2563EB">5</span><span style="font-size:9px;color:#9CA3AF">Đang thực hiện</span></div>
+      <div style="width:1px;height:28px;background:#E5E7EB"></div>
+      <div style="display:flex;flex-direction:column"><span style="font-size:18px;font-weight:800;color:#D97706">3</span><span style="font-size:9px;color:#9CA3AF">Chưa được giao</span></div>
+      <!-- mini leaderboard -->
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-family:system-ui">
+        <span style="font-size:9px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Leaderboard</span>
+        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:9px;color:#9CA3AF">#1</span><div style="width:20px;height:20px;border-radius:50%;background:#EEF2FF;color:#4338CA;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui">NM</div><span style="font-size:10px;font-weight:600;color:#374151">5 done</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:9px;color:#9CA3AF">#2</span><div style="width:20px;height:20px;border-radius:50%;background:#D1FAE5;color:#065F46;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui">TH</div><span style="font-size:10px;font-weight:600;color:#374151">3 done</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:9px;color:#9CA3AF">#3</span><div style="width:20px;height:20px;border-radius:50%;background:#FEF3C7;color:#92400E;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui">MC</div><span style="font-size:10px;font-weight:600;color:#374151">2 done</span></div>
+      </div>
+    </div>
+
+    <!-- Member cards grid -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex:1;min-height:0;overflow:hidden;background:#F9FAFB;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 10px 10px;padding:12px">
+
+      <!-- Card 1: Nam (me) -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #C7D2FE;box-shadow:0 0 0 1px #C7D2FE,0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;font-family:system-ui">
+        <div style="padding:10px 12px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #F3F4F6">
+          <div style="width:32px;height:32px;border-radius:50%;background:#EEF2FF;color:#4338CA;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">NM</div>
+          <div style="flex:1;min-width:0"><p style="font-size:11px;font-weight:700;color:#111;margin:0">Nam Nguyễn</p><p style="font-size:9px;color:#9CA3AF;margin:0">Chủ nhóm</p></div>
+          <span style="font-size:9px;font-weight:700;background:#EEF2FF;color:#4338CA;border-radius:999px;padding:2px 7px">Bạn</span>
+        </div>
+        <div style="padding:8px 12px 6px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:#6B7280">5/11 task</span><span style="font-size:9px;font-weight:700;color:#5B5BD6">46% đóng góp</span></div>
+          <div style="height:6px;background:#F3F4F6;border-radius:999px;overflow:hidden"><div style="width:45%;height:100%;background:linear-gradient(90deg,#6366F1,#14B8A6);border-radius:999px"></div></div>
+          <p style="font-size:9px;color:#9CA3AF;margin:3px 0 0">45% hoàn thành cá nhân</p>
+        </div>
+        <div style="padding:6px 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#2563EB">2</span><span style="font-size:8px;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:1px 4px;text-align:center">Đang làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#92400E">1</span><span style="font-size:8px;background:#FEF3C7;color:#92400E;border-radius:999px;padding:1px 4px;text-align:center">Review</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#FEE2E2;color:#DC2626;border-radius:999px;padding:1px 4px;text-align:center">Block</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#6B7280">3</span><span style="font-size:8px;background:#F3F4F6;color:#6B7280;border-radius:999px;padding:1px 4px;text-align:center">Chưa làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#0D9488">5</span><span style="font-size:8px;background:#D1FAE5;color:#065F46;border-radius:999px;padding:1px 4px;text-align:center">Xong</span></div>
+        </div>
+        <div style="padding:8px 12px;display:flex;flex-direction:column;gap:5px;flex:1">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Thiết kế kiến trúc Lambda</span><span style="font-size:9px;color:#9CA3AF">Kiến trúc</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#F59E0B;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Tối ưu join strategy</span><span style="font-size:9px;color:#9CA3AF">Spark</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Xây dựng data producer</span><span style="font-size:9px;color:#9CA3AF">Ingestion</span></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Thảo -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #E5E7EB;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;font-family:system-ui">
+        <div style="padding:10px 12px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #F3F4F6">
+          <div style="width:32px;height:32px;border-radius:50%;background:#D1FAE5;color:#065F46;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">TH</div>
+          <div style="flex:1;min-width:0"><p style="font-size:11px;font-weight:700;color:#111;margin:0">Thảo Hồ</p><p style="font-size:9px;color:#9CA3AF;margin:0">Thành viên</p></div>
+          <span style="font-size:9px;font-weight:600;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:2px 7px;display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#3B82F6"></span>2 active</span>
+        </div>
+        <div style="padding:8px 12px 6px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:#6B7280">3/8 task</span><span style="font-size:9px;font-weight:700;color:#5B5BD6">27% đóng góp</span></div>
+          <div style="height:6px;background:#F3F4F6;border-radius:999px;overflow:hidden"><div style="width:37%;height:100%;background:linear-gradient(90deg,#6366F1,#14B8A6);border-radius:999px"></div></div>
+          <p style="font-size:9px;color:#9CA3AF;margin:3px 0 0">37% hoàn thành cá nhân</p>
+        </div>
+        <div style="padding:6px 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#2563EB">2</span><span style="font-size:8px;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:1px 4px;text-align:center">Đang làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#FEF3C7;color:#92400E;border-radius:999px;padding:1px 4px;text-align:center">Review</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#FEE2E2;color:#DC2626;border-radius:999px;padding:1px 4px;text-align:center">Block</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#6B7280">3</span><span style="font-size:8px;background:#F3F4F6;color:#6B7280;border-radius:999px;padding:1px 4px;text-align:center">Chưa làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#0D9488">3</span><span style="font-size:8px;background:#D1FAE5;color:#065F46;border-radius:999px;padding:1px 4px;text-align:center">Xong</span></div>
+        </div>
+        <div style="padding:8px 12px;display:flex;flex-direction:column;gap:5px;flex:1">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Xây dựng pipeline transform</span><span style="font-size:9px;color:#9CA3AF">Spark</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Triển khai Spark Streaming</span><span style="font-size:9px;color:#9CA3AF">Ingestion</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Tích hợp NoSQL database</span><span style="font-size:9px;color:#9CA3AF">Storage</span></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Minh (blocked) -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #E5E7EB;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;font-family:system-ui">
+        <div style="padding:10px 12px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #F3F4F6">
+          <div style="width:32px;height:32px;border-radius:50%;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">MC</div>
+          <div style="flex:1;min-width:0"><p style="font-size:11px;font-weight:700;color:#111;margin:0">Minh Châu</p><p style="font-size:9px;color:#9CA3AF;margin:0">Thành viên</p></div>
+          <span style="font-size:9px;font-weight:600;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:2px 7px;display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#3B82F6"></span>1 active</span>
+        </div>
+        <div style="padding:8px 12px 6px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:#6B7280">2/7 task</span><span style="font-size:9px;font-weight:700;color:#5B5BD6">18% đóng góp</span></div>
+          <div style="height:6px;background:#F3F4F6;border-radius:999px;overflow:hidden"><div style="width:28%;height:100%;background:linear-gradient(90deg,#6366F1,#14B8A6);border-radius:999px"></div></div>
+          <p style="font-size:9px;color:#9CA3AF;margin:3px 0 0">28% hoàn thành cá nhân</p>
+        </div>
+        <div style="padding:6px 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#2563EB">1</span><span style="font-size:8px;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:1px 4px;text-align:center">Đang làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#FEF3C7;color:#92400E;border-radius:999px;padding:1px 4px;text-align:center">Review</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#DC2626">1</span><span style="font-size:8px;background:#FEE2E2;color:#DC2626;border-radius:999px;padding:1px 4px;text-align:center">Block</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#6B7280">3</span><span style="font-size:8px;background:#F3F4F6;color:#6B7280;border-radius:999px;padding:1px 4px;text-align:center">Chưa làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#0D9488">2</span><span style="font-size:8px;background:#D1FAE5;color:#065F46;border-radius:999px;padding:1px 4px;text-align:center">Xong</span></div>
+        </div>
+        <div style="padding:8px 12px;display:flex;flex-direction:column;gap:5px;flex:1">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#DC2626;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Triển khai advanced aggregations</span><span style="font-size:9px;color:#9CA3AF">Spark</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Cài đặt Kafka cluster</span><span style="font-size:9px;color:#9CA3AF">Ingestion</span></div>
+        </div>
+        <div style="padding:7px 12px;background:#FEF2F2;border-top:1px solid #FECACA"><span style="font-size:10px;font-weight:600;color:#DC2626">⚠ 1 task bị block: Triển khai aggregations</span></div>
+      </div>
+
+      <!-- Card 4: Đức -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #E5E7EB;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;font-family:system-ui">
+        <div style="padding:10px 12px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #F3F4F6">
+          <div style="width:32px;height:32px;border-radius:50%;background:#FCE7F3;color:#9D174D;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">ĐC</div>
+          <div style="flex:1;min-width:0"><p style="font-size:11px;font-weight:700;color:#111;margin:0">Đức Cao</p><p style="font-size:9px;color:#9CA3AF;margin:0">Thành viên</p></div>
+        </div>
+        <div style="padding:8px 12px 6px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:#6B7280">1/4 task</span><span style="font-size:9px;font-weight:700;color:#5B5BD6">9% đóng góp</span></div>
+          <div style="height:6px;background:#F3F4F6;border-radius:999px;overflow:hidden"><div style="width:25%;height:100%;background:linear-gradient(90deg,#6366F1,#14B8A6);border-radius:999px"></div></div>
+          <p style="font-size:9px;color:#9CA3AF;margin:3px 0 0">25% hoàn thành cá nhân</p>
+        </div>
+        <div style="padding:6px 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-bottom:1px solid #F3F4F6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#DBEAFE;color:#1D4ED8;border-radius:999px;padding:1px 4px;text-align:center">Đang làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#92400E">1</span><span style="font-size:8px;background:#FEF3C7;color:#92400E;border-radius:999px;padding:1px 4px;text-align:center">Review</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#D3D3D3">0</span><span style="font-size:8px;background:#FEE2E2;color:#DC2626;border-radius:999px;padding:1px 4px;text-align:center">Block</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#6B7280">2</span><span style="font-size:8px;background:#F3F4F6;color:#6B7280;border-radius:999px;padding:1px 4px;text-align:center">Chưa làm</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:12px;font-weight:800;color:#0D9488">1</span><span style="font-size:8px;background:#D1FAE5;color:#065F46;border-radius:999px;padding:1px 4px;text-align:center">Xong</span></div>
+        </div>
+        <div style="padding:8px 12px;display:flex;flex-direction:column;gap:5px;flex:1">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#F59E0B;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Containerize services</span><span style="font-size:9px;color:#9CA3AF">Deploy</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Triển khai Kubernetes</span><span style="font-size:9px;color:#9CA3AF">Deploy</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#14B8A6;flex-shrink:0"></span><span style="font-size:10px;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Triển khai HDFS</span><span style="font-size:9px;color:#9CA3AF">Storage</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- CONTROLS -->
@@ -707,7 +840,7 @@
 <script>
   const slides = document.querySelectorAll('.slide')
   const navEl = document.getElementById('nav')
-  const labels = ['Cover','Sidebar','Graph','Chat','AI Flow','Components','Demo']
+  const labels = ['Cover','Sidebar','Graph','Chat','AI Flow','Components','Demo','Members']
   let cur = 0
 
   slides.forEach((_,i)=>{

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TaskList } from '@/components/task/TaskList'
 import { InviteButton } from '@/components/project/InviteButton'
@@ -112,6 +113,12 @@ export function WorkspaceLayout({
           <span className="text-xs text-muted-foreground hidden md:inline">
             Deadline: <span className="font-medium text-gray-700">{formatDeadline(project.deadline)}</span>
           </span>
+          <Link
+            href={`/project/${project.id}/members`}
+            className="text-xs font-medium text-muted-foreground hover:text-gray-700 px-2 py-1 rounded-md hover:bg-muted transition-colors"
+          >
+            Thành viên
+          </Link>
           {userRole === 'owner' && <InviteButton projectId={project.id} />}
           {mounted && userRole === 'owner' && (
             <button
@@ -184,6 +191,7 @@ export function WorkspaceLayout({
               </div>
             </div>
           )}
+
         </div>
 
         <ContributionBar projectId={project.id} members={graphMembers} />
