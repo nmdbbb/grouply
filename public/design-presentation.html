@@ -135,6 +135,20 @@
     .wim{flex:1;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:4px 8px;font-size:9px;color:#9CA3AF;font-family:system-ui}
     .wisb{background:#5B5BD6;border:none;border-radius:5px;width:22px;height:22px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+    /* CONTRIBUTION BAR */
+    .cbr{background:#fff;border-top:1px solid #E5E7EB;padding:7px 16px;display:flex;align-items:center;gap:18px;flex-shrink:0;overflow:hidden}
+    .cbl{font-size:10px;font-weight:600;color:#374151;white-space:nowrap;font-family:system-ui;margin-right:4px}
+    .cbm{display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative}
+    .cbav{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;font-family:system-ui;flex-shrink:0}
+    .cbinfo{display:flex;flex-direction:column;gap:2px}
+    .cbn{font-size:9px;color:#6B7280;font-family:system-ui;white-space:nowrap}
+    .cbbar{display:flex;align-items:center;gap:4px}
+    .cbp{height:5px;background:#14B8A6;border-radius:2px;min-width:2px}
+    .cbpct{font-size:9px;font-weight:600;color:#374151;font-family:system-ui}
+    .cbtt{position:absolute;bottom:calc(100% + 5px);left:0;background:#1F2937;color:#fff;font-size:9px;border-radius:5px;padding:4px 8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:20;font-family:system-ui}
+    .cbm:hover .cbtt{opacity:1}
+    .cbcoll{margin-left:auto;font-size:10px;color:#9CA3AF;background:none;border:none;cursor:pointer;font-family:system-ui;padding:0 4px}
+
     /* dim/focus overlays */
     .dim-ov{position:absolute;inset:0;background:rgba(7,7,26,.60);z-index:5;pointer-events:none}
     .focus-ring{box-shadow:inset 0 0 0 2.5px #5B5BD6}
@@ -730,6 +744,36 @@
     if(e.key==='+' || (e.key==='=' && e.ctrlKey)){e.preventDefault();zrange.value=Math.min(140,+zrange.value+5);applyZoom(+zrange.value)}
     if(e.key==='-' && e.ctrlKey){e.preventDefault();zrange.value=Math.max(60,+zrange.value-5);applyZoom(+zrange.value)}
     if(e.key==='0' && e.ctrlKey){e.preventDefault();zrange.value=100;applyZoom(100)}
+  })
+
+  // Contribution bar — inject into every ws-wrap
+  const CB_MEMBERS = [
+    {init:'NM',name:'Nam Nguyễn',bg:'#EEF2FF',color:'#4338CA',pct:46,done:5,doing:2},
+    {init:'TH',name:'Thảo Hồ',bg:'#D1FAE5',color:'#065F46',pct:28,done:3,doing:1},
+    {init:'MC',name:'Minh Châu',bg:'#FEF3C7',color:'#92400E',pct:18,done:2,doing:1},
+    {init:'ĐC',name:'Đức Cao',bg:'#FCE7F3',color:'#9D174D',pct:8,done:1,doing:0},
+  ]
+  function mkCB() {
+    return `<div class="cbr">
+      <span class="cbl">Contribution</span>
+      ${CB_MEMBERS.map(m=>`
+      <div class="cbm">
+        <div class="cbav" style="background:${m.bg};color:${m.color}">${m.init}</div>
+        <div class="cbinfo">
+          <span class="cbn">${m.name}</span>
+          <div class="cbbar">
+            <div class="cbp" style="width:${Math.max(m.pct*0.8,2)}px"></div>
+            <span class="cbpct">${m.pct}%</span>
+          </div>
+        </div>
+        <div class="cbtt">${m.done} done · ${m.doing} đang làm</div>
+      </div>`).join('')}
+      <button class="cbcoll">▼</button>
+    </div>`
+  }
+  document.querySelectorAll('.ws-wrap').forEach(wrap => {
+    const wsp = wrap.querySelector('.wsp')
+    if (wsp) wsp.insertAdjacentHTML('afterend', mkCB())
   })
 
   function dhl(id){
